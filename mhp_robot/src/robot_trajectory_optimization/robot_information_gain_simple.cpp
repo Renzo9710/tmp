@@ -38,13 +38,12 @@ double RobotInformationGainSimple::computeGain(int k, const Eigen::Ref<const Eig
         Eigen::Matrix4d T = _robot_kinematic->getEndEffectorMatrix(x_k) * _tf_cam_to_ee_link;
 
         // Transform POI to world frame
-        Eigen::Vector4d poi_world{1.19, 0.16, 0.33, 1.0};
         Eigen::Vector4d z_axis{0, 0, 1, 1};
         Eigen::Vector4d z_axis_world = T * z_axis;
         // get the scalar product between the camera and the POI axis
-        double scalar_product = Eigen::Vector3d{poi_world[0] - T(0, 3), poi_world[1] - T(1, 3), poi_world[2] - T(2, 3)}.dot(
+        double scalar_product = Eigen::Vector3d{ _poi_world[0] - T(0, 3),  _poi_world[1] - T(1, 3),  _poi_world[2] - T(2, 3)}.dot(
                                     Eigen::Vector3d{z_axis_world[0] - T(0, 3), z_axis_world[1] - T(1, 3), z_axis_world[2] - T(2, 3)}) /
-                                (Eigen::Vector3d{poi_world[0] - T(0, 3), poi_world[1] - T(1, 3), poi_world[2] - T(2, 3)}.norm() *
+                                (Eigen::Vector3d{ _poi_world[0] - T(0, 3),  _poi_world[1] - T(1, 3),  _poi_world[2] - T(2, 3)}.norm() *
                                  Eigen::Vector3d{z_axis_world[0] - T(0, 3), z_axis_world[1] - T(1, 3), z_axis_world[2] - T(2, 3)}.norm());
         // set multiplication factor to 0 if the scalara product relates to an angle outside of the FOV (horizontal --> Azure camera 37.5° in each
         // direction) ~ 0.79
@@ -56,17 +55,9 @@ double RobotInformationGainSimple::computeGain(int k, const Eigen::Ref<const Eig
         {
             factor = scalar_product;
         }
-        // if ((T.block<3, 1>(0, 3) - poi_world.block<3, 1>(0, 0)).norm() > 0.5)
-        // {
-        //     gain = 0;
-        // }
-        // else
-        // {
+
         inverseDistanceWeigthing(T.block<3, 1>(0, 3), gain);
-        // }
-        // std::cout << "Factor: " << factor << std::endl;
-        // std::cout << "Gain: " << gain << std::endl;
-        // std::cout << "Gain with factor: " << 1 / (factor * gain + _eps) << std::endl;
+       
     }
 
     return _w_gain / (factor * gain + _eps);  // add small epsilon to avoid division by zero
@@ -81,7 +72,6 @@ void RobotInformationGainSimple::inverseDistanceWeigthing(const Eigen::Ref<const
     {
         pcl_points.col(i) = Eigen::Vector3d{_information_pcl.points[i].x, _information_pcl.points[i].y, _information_pcl.points[i].z};
     }
-    // Eigen::MatrixXd pcl_points = _information_pcl.getMatrixXfMap(3, 4, 0).cast<double>();
 
     Eigen::VectorXd dists = (pcl_points.colwise() - point).colwise().norm();
 

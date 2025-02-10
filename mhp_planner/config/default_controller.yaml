@@ -90,7 +90,7 @@ controller:
           uncertainty_estimation_human: true
           uncertainty_mode: SkeletonSplitting # None or SkeletonSplitting or RadiusIncrease
         information_gain:
-          information_gain_type: URInformationGainSimple # None or URInformationGainSimple
+          information_gain_type: URInformationGainTimeDecrease # None, URInformationGainSimple, URInformationGainTimeDecrease
           weight: 100.0        
     final_stage_cost:
       final_stage_cost_type: URFinalStageCost #URFinalStageCost or None for no stage costs

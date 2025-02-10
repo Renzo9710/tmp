@@ -25,76 +25,118 @@
 
 #include <mhp_robot/robot_trajectory_optimization/robot_information_gain.h>
 
-namespace mhp_robot {
-namespace robot_trajectory_optimization {
-
-void RobotInformationGain::computeGradient(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k, Eigen::Ref<Eigen::VectorXd> dx)
+namespace mhp_robot
 {
-    Eigen::VectorXd diff = Eigen::VectorXd::Zero(x_k.size());
-    for (int i = 0; i < x_k.size(); ++i)
+    namespace robot_trajectory_optimization
     {
-        diff(i) = _eps;
-        dx(i)   = (computeGain(k, x_k + diff) - computeGain(k, x_k - diff)) / (2 * _eps);
-        diff(i) = 0.0;
-    }
-}
 
-void RobotInformationGain::computeHessian(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k, Eigen::Ref<Eigen::MatrixXd> dxdx)
-{
-    int n                = x_k.size();
-    Eigen::VectorXd diff = Eigen::VectorXd::Zero(n);
-    Eigen::VectorXd ldx(n), rdx(n);
-    for (int i = 0; i < n; ++i)
-    {
-        diff(i) = _eps;
-        computeGradient(k, x_k + diff, rdx);
-        computeGradient(k, x_k - diff, ldx);
-        dxdx.col(i) = (rdx - ldx) / (2 * _eps);
-        diff(i)     = 0.0;
-    }
-}
+        void RobotInformationGain::computeGradient(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k, Eigen::Ref<Eigen::VectorXd> dx)
+        {
+            Eigen::VectorXd diff = Eigen::VectorXd::Zero(x_k.size());
+            for (int i = 0; i < x_k.size(); ++i)
+            {
+                diff(i) = _eps;
+                dx(i) = (computeGain(k, x_k + diff) - computeGain(k, x_k - diff)) / (2 * _eps);
+                diff(i) = 0.0;
+            }
+        }
 
-bool RobotInformationGain::initialize(robot_kinematic::RobotKinematic::UPtr robot_kinematic)
-{
+        void RobotInformationGain::computeHessian(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k, Eigen::Ref<Eigen::MatrixXd> dxdx)
+        {
+            int n = x_k.size();
+            Eigen::VectorXd diff = Eigen::VectorXd::Zero(n);
+            Eigen::VectorXd ldx(n), rdx(n);
+            for (int i = 0; i < n; ++i)
+            {
+                diff(i) = _eps;
+                computeGradient(k, x_k + diff, rdx);
+                computeGradient(k, x_k - diff, ldx);
+                dxdx.col(i) = (rdx - ldx) / (2 * _eps);
+                diff(i) = 0.0;
+            }
+        }
 
-    _robot_kinematic = std::move(robot_kinematic);
+        bool RobotInformationGain::initialize(robot_kinematic::RobotKinematic::UPtr robot_kinematic)
+        {
 
-    ros::NodeHandle nh;
-    std::string _information_gain_topic_name = "/ufomap_server_node/info_dist_cloud";
-    _information_gain_sub                    = nh.subscribe(_information_gain_topic_name, 1, &RobotInformationGain::informationGainCallback, this);
+            _robot_kinematic = std::move(robot_kinematic);
 
-    tf::StampedTransform transform;
-    tf::TransformListener tf_listener;
-    try
-    {
-        ros::Time now = ros::Time::now();
-        Eigen::Affine3d tmp;
-        tf_listener.waitForTransform("/ee_link", "/depth_camera_link", ros::Time(0), ros::Duration(10.0));
-        tf_listener.lookupTransform("/ee_link", "/depth_camera_link", ros::Time(0), transform);
-        tf::transformTFToEigen(transform, tmp);
-        _tf_cam_to_ee_link = tmp.matrix();
-    }
-    catch (tf::TransformException ex)
-    {
-        ROS_ERROR("%s", ex.what());
-        ros::Duration(1.0).sleep();
-    }
+            ros::NodeHandle nh;
 
-    _initialized = true;
+            // Should we buffer the point cloud?
+            _buffer_pcl = nh.param("ufomap_server_node/buffer_pcl", true);
+            _buffer_size = nh.param("ufomap_server_node/buffer_size", 10);
+            _camera_frame = nh.param("depth_camera_frame", std::string("camera_3d_depth_camera_link"));
 
-    return true;
-}
+            // Point of interest in world frame
+            std::vector<double> poi = nh.param("/ufomap_server_node/poi_world", std::vector<double>{1.19, 0.16, 0.33});
+            _poi_world = Eigen::Vector4d(poi[0], poi[1], poi[2], 1.0);
 
-bool RobotInformationGain::update(double dt)
-{
-    _dt = dt;
+            std::string _information_gain_topic_name = "/ufomap_server_node/info_dist_cloud";
 
-    return false;
-}
+            if (_buffer_pcl)
+            {
+                _information_gain_sub = nh.subscribe(_information_gain_topic_name, 1, &RobotInformationGain::informationGainCallbackBuffer, this);
+            }
+            else
+            {
+                _information_gain_sub = nh.subscribe(_information_gain_topic_name, 1, &RobotInformationGain::informationGainCallback, this);
+            }
 
-bool RobotInformationGain::isInitialized() const { return _initialized; }
+            tf::StampedTransform transform;
+            tf::TransformListener tf_listener;
+            try
+            {
+                ros::Time now = ros::Time::now();
+                Eigen::Affine3d tmp;
+                tf_listener.waitForTransform("/ee_link", "/camera_3d_depth_camera_link", ros::Time(0), ros::Duration(10.0));
+                tf_listener.lookupTransform("/ee_link", "/camera_3d_depth_camera_link", ros::Time(0), transform);
+                tf::transformTFToEigen(transform, tmp);
+                _tf_cam_to_ee_link = tmp.matrix();
+            }
+            catch (tf::TransformException ex)
+            {
+                ROS_ERROR("%s", ex.what());
+                ros::Duration(1.0).sleep();
+            }
 
-void RobotInformationGain::informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) { pcl::fromROSMsg(*msg, _information_pcl); }
+            _initialized = true;
 
-}  // namespace robot_trajectory_optimization
-}  // namespace mhp_robot
+            return true;
+        }
+
+        bool RobotInformationGain::update(double dt)
+        {
+            _dt = dt;
+
+            return false;
+        }
+
+        bool RobotInformationGain::isInitialized() const { return _initialized; }
+
+        void RobotInformationGain::informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr &msg) { pcl::fromROSMsg(*msg, _information_pcl); }
+        void RobotInformationGain::informationGainCallbackBuffer(const mhp_robot::MsgInfoPCLS::ConstPtr &msg)
+        {
+            _information_pcl.clear();
+
+            pcl::PointCloud<pcl::PointXYZI> pcl_all;
+            for (int i = 0; i < msg->pcls.size(); ++i)
+            {
+                pcl::PointCloud<pcl::PointXYZI> pcl;
+                pcl::fromROSMsg(msg->pcls[i], pcl);
+                pcl_all += pcl;
+            }
+
+            _pcl_mutex.lock();
+            _information_pcl = pcl_all;
+            _pcl_mutex.unlock();
+            _pcl_num_mutex.lock();
+            _pcl_num = _information_pcl.size();
+            _pcl_num_mutex.unlock();
+            _new_pcl_mutex.lock();
+            _new_pcl = true;
+            _new_pcl_mutex.unlock();
+        }
+
+    } // namespace robot_trajectory_optimization
+} // namespace mhp_robot

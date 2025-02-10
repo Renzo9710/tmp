@@ -25,15 +25,16 @@
 
 #include <ur10_planner/ocp/gains/ur_information_gain_simple_corbo.h>
 
-namespace mhp_planner {
-mhp_planner::URBaseInformationGain::Ptr URInformationGainSimple::getInstance() const { return std::make_shared<URInformationGainSimple>(); }
-bool URInformationGainSimple::fromParameterServer(const std::string& ns)
+namespace mhp_planner
 {
-    ros::NodeHandle nh;
+    mhp_planner::URBaseInformationGain::Ptr URInformationGainSimple::getInstance() const { return std::make_shared<URInformationGainSimple>(); }
+    bool URInformationGainSimple::fromParameterServer(const std::string &ns)
+    {
+        ros::NodeHandle nh;
 
-    // Set weight for the information gain
-    nh.getParam(ns + "/weight", _w_gain);
-    
-    return true;
-}
-}  // namespace corbo
+        // Set weight for the information gain
+        nh.getParam(ns + "/weight", _w_gain);
+
+        return true;
+    }
+} // namespace mhp_planner

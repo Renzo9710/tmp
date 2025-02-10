@@ -37,68 +37,96 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <sensor_msgs/PointCloud2.h>
+#include <mhp_robot/MsgInfoPCLS.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
-namespace mhp_robot {
-namespace robot_trajectory_optimization {
-
-class RobotInformationGain
+namespace mhp_robot
 {
- public:
-    using Ptr  = std::shared_ptr<RobotInformationGain>;
-    using UPtr = std::unique_ptr<RobotInformationGain>;
-
-    RobotInformationGain() = default;
-
-    RobotInformationGain(const RobotInformationGain&)            = delete;
-    RobotInformationGain(RobotInformationGain&&)                 = delete;
-    RobotInformationGain& operator=(const RobotInformationGain&) = delete;
-    RobotInformationGain& operator=(RobotInformationGain&&)      = delete;
-    virtual ~RobotInformationGain() {}
-
-    virtual double computeGain(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k) = 0;
-
-    virtual void computeGradient(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k, Eigen::Ref<Eigen::VectorXd> dx);
-
-    virtual void computeHessian(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k, Eigen::Ref<Eigen::MatrixXd> dxdx);
-
-    bool initialize(robot_kinematic::RobotKinematic::UPtr robot_kinematic);
-    bool update(double dt);
-    bool isInitialized() const;
-
-    void setPlannerId(const int id)
+    namespace robot_trajectory_optimization
     {
-        _planner_id = id;
-        if (_planner_id != 0) _ms_planner_mode = true;
-    }
-    int getPlannerId() const { return _planner_id; }
-    bool isPlannerSet() const { return _ms_planner_mode; }
 
- protected:
-    using RobotKinematic = robot_kinematic::RobotKinematic;
+        class RobotInformationGain
+        {
+        public:
+            using Ptr = std::shared_ptr<RobotInformationGain>;
+            using UPtr = std::unique_ptr<RobotInformationGain>;
 
-    ros::Subscriber _information_gain_sub;
-    pcl::PointCloud<pcl::PointXYZI> _information_pcl;
+            RobotInformationGain() = default;
 
-    Eigen::Matrix4d       _tf_cam_to_ee_link = Eigen::Matrix4d::Identity();
-    RobotKinematic::UPtr _robot_kinematic;
+            RobotInformationGain(const RobotInformationGain &) = delete;
+            RobotInformationGain(RobotInformationGain &&) = delete;
+            RobotInformationGain &operator=(const RobotInformationGain &) = delete;
+            RobotInformationGain &operator=(RobotInformationGain &&) = delete;
+            virtual ~RobotInformationGain() {}
 
-    double _dt  = 0.1;
-    double _eps = 1e-7;
-    double _w_gain = 1.0;
-    bool _initialized = false;
+            virtual double computeGain(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k) = 0;
 
-    void informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
+            virtual void computeGradient(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k, Eigen::Ref<Eigen::VectorXd> dx);
 
-    // Variables for Multistage Planner
-    int _planner_id       = 0;
-    bool _ms_planner_mode = false;
+            virtual void computeHessian(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k, Eigen::Ref<Eigen::MatrixXd> dxdx);
 
-    enum UncertaintyMode { NoUncertaintyEstimation, SkeletonSplitting, RadiusIncrease } _uncertainty_mode = NoUncertaintyEstimation;
-};
+            bool initialize(robot_kinematic::RobotKinematic::UPtr robot_kinematic);
+            bool update(double dt);
+            bool isInitialized() const;
 
-}  // namespace robot_trajectory_optimization
-}  // namespace mhp_robot
+            void setPlannerId(const int id)
+            {
+                _planner_id = id;
+                if (_planner_id != 0)
+                    _ms_planner_mode = true;
+            }
+            int getPlannerId() const { return _planner_id; }
+            bool isPlannerSet() const { return _ms_planner_mode; }
 
-#endif  // ROBOT_INFORMATION_GAIN_H
+        protected:
+            using RobotKinematic = robot_kinematic::RobotKinematic;
+
+            ros::Subscriber _information_gain_sub;
+            pcl::PointCloud<pcl::PointXYZI> _information_pcl;
+
+            Eigen::Matrix4d _tf_cam_to_ee_link = Eigen::Matrix4d::Identity();
+            RobotKinematic::UPtr _robot_kinematic;
+
+            double _dt = 0.1;
+            double _eps = 1e-7;
+            double _w_gain = 1.0;
+            bool _initialized = false;
+
+            void informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
+            void informationGainCallbackBuffer(const mhp_robot::MsgInfoPCLS::ConstPtr &msg);
+
+            // Variables for Multistage Planner
+            int _planner_id = 0;
+            bool _ms_planner_mode = false;
+
+            enum UncertaintyMode
+            {
+                NoUncertaintyEstimation,
+                SkeletonSplitting,
+                RadiusIncrease
+            } _uncertainty_mode = NoUncertaintyEstimation;
+
+            // Point of Interest
+            Eigen::Vector4d _poi_world;
+
+            std::string _camera_frame = "depth_camera_link";
+
+            // Buffer size for time decrease
+            int _buffer_size = 10; // Currently fixed, adapt if buffer changes size
+            bool _buffer_pcl = true;
+
+            // Time decrease adaptions
+            int _pcl_num = 0;
+            bool _new_pcl; // flag to check if new pcl is available
+
+            // PCL mutexes
+            std::mutex _pcl_mutex;
+            std::mutex _pcl_num_mutex;
+            std::mutex _new_pcl_mutex;
+        };
+
+    } // namespace robot_trajectory_optimization
+} // namespace mhp_robot
+
+#endif // ROBOT_INFORMATION_GAIN_H

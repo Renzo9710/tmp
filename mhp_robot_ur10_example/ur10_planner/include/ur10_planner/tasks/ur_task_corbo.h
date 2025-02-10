@@ -19,8 +19,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
-*  Authors: Maximilian Krämer
-*  Maintainer(s)/Modifier(s): Heiko Renz
+ *  Authors: Maximilian Krämer
+ *  Maintainer(s)/Modifier(s): Heiko Renz
  *********************************************************************/
 
 #ifndef UR_TASK_MHP_PLANNER_H
@@ -39,77 +39,90 @@
 #include <ur_utilities/ur_kinematic/ur_kinematic.h>
 #include <ur_utilities/ur_misc/ur_utility.h>
 
-namespace mhp_planner {
+#include <ur10_planner/tasks/path_pilot/ur_base_path_pilot_corbo.h>
 
-class URTask : public TaskInterface
+namespace mhp_planner
 {
- public:
-    using Ptr  = std::shared_ptr<URTask>;
-    using UPtr = std::unique_ptr<URTask>;
 
-    URTask() = default;
+   class URTask : public TaskInterface
+   {
+   public:
+      using Ptr = std::shared_ptr<URTask>;
+      using UPtr = std::unique_ptr<URTask>;
 
-    TaskInterface::Ptr getInstance() const override;
+      URTask() = default;
 
-    void performTask(Environment& environment, std::string* err_msg) override;
+      TaskInterface::Ptr getInstance() const override;
 
-    bool verify(const Environment& environment, std::string* msg = nullptr) const override;
+      void performTask(Environment &environment, std::string *err_msg) override;
 
-    void reset() override;
+      bool verify(const Environment &environment, std::string *msg = nullptr) const override;
 
-    bool fromParameterServer(const std::string& ns) override;
+      void reset() override;
 
- private:
-    using ObstacleList = mhp_robot::robot_obstacle::ObstacleList;
-    using Common       = mhp_robot::robot_misc::Common;
-    using URKinematic  = mhp_robot::robot_kinematic::URKinematic;
-    using URUtility    = mhp_robot::robot_misc::URUtility;
-    using URCollision  = mhp_robot::robot_collision::URCollision;
+      bool fromParameterServer(const std::string &ns) override;
 
-    double _measured_planning_time  = 0.0;
-    double _sim_time                = 100.0;
-    double _dt                      = 0.1;
-    double _computation_delay       = 0.0;
-    double _offset_delay            = 0.0;
-    double _parallel_hysteresis     = 1.0;
-    bool _start_environment         = false;
-    bool _publish_prediction_marker = true;
-    bool _publish_task_space        = false;
-    bool _first_xref                = true;
-    bool _new_sref                  = false;
-    bool _new_xref                  = false;
-    bool _reinit                    = false;
-    bool _single_shot               = false;
-    bool _trigger_replan            = true;
+   private:
+      using ObstacleList = mhp_robot::robot_obstacle::ObstacleList;
+      using Common = mhp_robot::robot_misc::Common;
+      using URKinematic = mhp_robot::robot_kinematic::URKinematic;
+      using URUtility = mhp_robot::robot_misc::URUtility;
+      using URCollision = mhp_robot::robot_collision::URCollision;
 
-    FilterInterface::Ptr _computation_delay_filter;
+      enum ReferenceMode
+      {
+         CALLBACK,
+         PATHPILOT
+      } _reference_mode = CALLBACK;
 
-    DiscreteTimeReferenceTrajectory::Ptr _state_init;
-    DiscreteTimeReferenceTrajectory::Ptr _control_init;
-    DiscreteTimeReferenceTrajectory::Ptr _state_reference, _state_reference_callback;
-    DiscreteTimeReferenceTrajectory::Ptr _control_reference, _control_reference_callback;
-    DiscreteTimeReferenceTrajectory::Ptr _pose_reference, _pose_reference_callback;
-    Eigen::Matrix<double, 6, 1> _initial_state_reference;
+      double _measured_planning_time = 0.0;
+      double _sim_time = 100.0;
+      double _dt = 0.1;
+      double _computation_delay = 0.0;
+      double _offset_delay = 0.0;
+      double _parallel_hysteresis = 1.0;
+      bool _start_environment = false;
+      bool _publish_prediction_marker = true;
+      bool _publish_task_space = false;
+      bool _first_xref = true;
+      bool _new_sref = false;
+      bool _new_xref = false;
+      bool _reinit = false;
+      bool _single_shot = false;
+      bool _trigger_replan = true;
 
-    void stateTargetCallback(const trajectory_msgs::JointTrajectoryConstPtr& msg);
-    void taskSpaceTargetCallback(const trajectory_msgs::MultiDOFJointTrajectoryConstPtr& msg);
-    void obstacleCallback(const mhp_robot::MsgObstacleListConstPtr& msg);
+      std::string _ns;
+      
+      FilterInterface::Ptr _computation_delay_filter;
 
-    void processRefsAndInits(const Eigen::Ref<const Eigen::VectorXd>& measured_state, const TimeSeries& optimized_states,
-                             const Time& t_measured_state);
-    void initReferences(int state_dimension, int control_dimension);
-    void publishPredictionMarker(const TimeSeries& sequence);
-    void startEnvironment(bool start, ros::ServiceClient& client);
+      DiscreteTimeReferenceTrajectory::Ptr _state_init;
+      DiscreteTimeReferenceTrajectory::Ptr _control_init;
+      DiscreteTimeReferenceTrajectory::Ptr _state_reference, _state_reference_callback;
+      DiscreteTimeReferenceTrajectory::Ptr _control_reference, _control_reference_callback;
+      DiscreteTimeReferenceTrajectory::Ptr _pose_reference, _pose_reference_callback;
+      Eigen::Matrix<double, 6, 1> _initial_state_reference;
 
-    ros::Publisher _prediction_pub;
+      void stateTargetCallback(const trajectory_msgs::JointTrajectoryConstPtr &msg);
+      void taskSpaceTargetCallback(const trajectory_msgs::MultiDOFJointTrajectoryConstPtr &msg);
+      void obstacleCallback(const mhp_robot::MsgObstacleListConstPtr &msg);
 
-    ObstacleList _obstacle_manager;
-    URUtility::UPtr _ur_utility;
-    URKinematic::UPtr _ur_kinematic;
-};
+      void processRefsAndInits(URBasePathPilotCORBO::SubReference& sub_reference,const Eigen::Ref<const Eigen::VectorXd> &measured_state, const TimeSeries &optimized_states,
+                               const Time &t_measured_state);
+      void initReferences(int state_dimension, int control_dimension);
+      void publishPredictionMarker(const TimeSeries &sequence);
+      void startEnvironment(bool start, ros::ServiceClient &client);
 
-FACTORY_REGISTER_TASK(URTask)
+      URBasePathPilotCORBO::Ptr _ur_path_pilot;
 
-}  // namespace mhp_planner
+      ros::Publisher _prediction_pub;
 
-#endif  // UR_TASK_MHP_PLANNER_H
+      ObstacleList _obstacle_manager;
+      URUtility::UPtr _ur_utility;
+      URKinematic::UPtr _ur_kinematic;
+   };
+
+   FACTORY_REGISTER_TASK(URTask)
+
+} // namespace mhp_planner
+
+#endif // UR_TASK_MHP_PLANNER_H

@@ -39,3 +39,31 @@ task:
       window_size: 5
       polynomial_order: 3
   general_offset_delay: 0.0
+
+  reference_mode: 
+    reference_mode_type: PathPilot # PathPilot, Callback
+    path_pilot:
+      direct_motion_r: 0.1
+      replan_r: 0.08
+      visualize: True
+      lambda: 0.4
+      tau: 0.1
+      dt: 0.1
+      min_obstacle_collision: 0.1
+      backstepping_resolution: 0.01
+      K: -4
+      global_planner:
+        min_self_collision: 0.05
+        min_obstacle_collision: 0.1
+        min_ground_collision: 0.1
+        min_roof_collision: 0.1
+        min_plane_collision: 0.1
+        validity_resolution: 0.001
+        solve_time: 0.01
+        max_plan_time: 0.5
+        max_path_length: 5
+        path_length_objective: None # None, JointSpace, TaskSpace
+        simplify: True
+        simplify_time: 0.01
+        global_planner_method: ErgodicCORBO
+

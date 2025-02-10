@@ -56,7 +56,9 @@ int main(int argc, char** argv)
 	int num_workers = nh_priv.param("num_workers", 1);
 	int startpoints = nh_priv.param("num_startpoints", 100);
 	int scaling_grid = nh_priv.param("num_scaling_gridpoints", 10);
-	ufomap_mapping::Server server(nh, nh_priv,startpoints,scaling_grid);
+	int buffer_size  = nh_priv.param("buffer_size", 20);
+
+	ufomap_mapping::Server server(nh, nh_priv,startpoints,scaling_grid,buffer_size);
 
 	if (1 < num_workers) {
 		ros::MultiThreadedSpinner spinner(num_workers);

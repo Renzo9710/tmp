@@ -43,12 +43,16 @@
 #include <ur10_planner/ocp/costs/ur_quadratic_cost_joint_space_corbo.h>
 #include <ur10_planner/ocp/potentials/ur_collision_potential_mohri_corbo.h>
 #include <ur10_planner/ocp/gains/ur_information_gain_simple_corbo.h>
+#include <ur10_planner/ocp/gains/ur_information_gain_time_decrease_corbo.h>
 #include <ur10_planner/ocp/ur_final_stage_cost_corbo.h>
 #include <ur10_planner/ocp/ur_final_state_constraint_joint_space_corbo.h>
 #include <ur10_planner/ocp/ur_inequality_constraint_corbo.h>
 #include <ur10_planner/ocp/ur_stage_cost_corbo.h>
 #include <ur10_planner/plants/ur_robot_corbo.h>
 #include <ur10_planner/tasks/ur_task_corbo.h>
+#include <ur10_planner/tasks/path_pilot/ur_path_pilot_corbo.h>
+#include <ur10_planner/tasks/path_pilot/ur_global_planner_corbo.h>
+#include <ur10_planner/tasks/path_pilot/planner_methods/ergodic_corbo.h>
 
 int main(int argc, char** argv)
 {

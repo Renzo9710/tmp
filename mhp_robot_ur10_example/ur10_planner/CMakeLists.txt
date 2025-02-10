@@ -69,6 +69,7 @@ src/ocp/constraints/ur_acceleration_constraint_corbo.cpp
 src/ocp/constraints/ur_collision_constraint_corbo.cpp
 
 src/ocp/gains/ur_information_gain_simple_corbo.cpp
+src/ocp/gains/ur_information_gain_time_decrease_corbo.cpp
 
 src/ocp/ur_stage_preprocessor_corbo.cpp
 )
@@ -91,6 +92,11 @@ target_link_libraries(ur10_plants
 ###################
 add_library(ur10_tasks STATIC 
 src/tasks/ur_task_corbo.cpp
+
+src/tasks/path_pilot/ur_path_pilot_corbo.cpp
+src/tasks/path_pilot/ur_global_planner_corbo.cpp
+
+src/tasks/path_pilot/planner_methods/ergodic_corbo.cpp
 )
 target_link_libraries(ur10_tasks
   ${catkin_LIBRARIES}

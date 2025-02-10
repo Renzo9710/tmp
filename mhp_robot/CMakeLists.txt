@@ -36,7 +36,10 @@ find_package(catkin REQUIRED COMPONENTS
   view_controller_msgs
   rosbag
   pcl_ros
+  sensor_msgs
 )
+
+find_package(ompl REQUIRED) 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -63,6 +66,7 @@ add_message_files(
   MsgExtrapolatedAngle.msg
   MsgFutureAngles.msg
   MsgUncertaintyState.msg
+  MsgInfoPCLS.msg
 )
 
 # Generate services in the 'srv' folder
@@ -77,6 +81,7 @@ generate_messages(
   std_msgs
   geometry_msgs
   trajectory_msgs
+  sensor_msgs
 )
 
 
@@ -85,8 +90,8 @@ generate_messages(
 ###################################
 
 catkin_package(
-  INCLUDE_DIRS include extern/eigen3 extern/natnet/include
-  LIBRARIES robot_description robot_kinematic robot_collision robot_obstacle robot_misc robot_trajectory_optimization robot_manipulator robot_dynamic robot_setpoint_manager
+  INCLUDE_DIRS include extern/eigen3 extern/natnet/include ${OMPL_INCLUDE_DIRS}
+  LIBRARIES robot_description robot_kinematic robot_collision robot_obstacle robot_misc robot_trajectory_optimization robot_manipulator robot_dynamic robot_setpoint_manager robot_path_pilot
   CATKIN_DEPENDS roscpp std_msgs geometry_msgs trajectory_msgs gazebo_msgs visualization_msgs message_generation urdf tf tf_conversions interactive_markers message_runtime rosbag pcl_ros
   DEPENDS gazebo_ros
 )
@@ -101,6 +106,7 @@ include_directories(
   include 
   extern/eigen3 
   ${catkin_INCLUDE_DIRS}
+  ${OMPL_INCLUDE_DIRS}
 )
 
 if (${USE_NATNET})
@@ -279,6 +285,7 @@ add_library(robot_trajectory_optimization STATIC
   
   src/robot_trajectory_optimization/robot_information_gain.cpp
   src/robot_trajectory_optimization/robot_information_gain_simple.cpp
+  src/robot_trajectory_optimization/robot_information_gain_time_decrease.cpp
 )
 target_link_libraries(robot_trajectory_optimization
   ${catkin_LIBRARIES}
@@ -294,9 +301,7 @@ add_library(robot_setpoint_manager STATIC
   src/robot_setpoint_manager/robot_setpoint_manager.cpp
   src/robot_setpoint_manager/objectives/base_setpoint_objective.cpp
   src/robot_setpoint_manager/objectives/euclidean_setpoint_objective.cpp
-  src/robot_setpoint_manager/objectives/joint_limit_setpoint_objective.cpp
   src/robot_setpoint_manager/objectives/length_setpoint_objective.cpp
-  src/robot_setpoint_manager/objectives/manipulability_setpoint_objective.cpp
 )
 target_link_libraries(robot_setpoint_manager
   robot_kinematic
@@ -305,6 +310,29 @@ target_link_libraries(robot_setpoint_manager
   ${catkin_LIBRARIES}
 )
 
+#####################
+# robot_path_pilot  #
+#####################
+
+# robot_path_pilot library
+add_library(robot_path_pilot STATIC
+  src/robot_path_pilot/robot_path_pilot.cpp
+  src/robot_path_pilot/robot_global_planner.cpp
+  src/robot_path_pilot/robot_global_planner_method.cpp
+
+  src/robot_path_pilot/planner_methods/ergodic.cpp
+
+  src/robot_path_pilot/ompl_planners/ompl_ergodic.cpp
+  
+  src/robot_path_pilot/objectives/robot_path_objective_task_space.cpp
+)
+
+target_link_libraries(robot_path_pilot
+  ${catkin_LIBRARIES}
+  ${OMPL_LIBRARIES}
+)
+
+add_dependencies(robot_path_pilot mhp_robot_generate_messages_cpp)
 
 #####################
 # NATNET            #

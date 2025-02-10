@@ -284,6 +284,21 @@ namespace mhp_planner
                 return false;
             }
         }
+        else if (information_gain_type == "URInformationGainTimeDecrease")
+        {
+            _information_gain = Factory<URBaseInformationGain>::instance().create(information_gain_type);
+            // import parameters
+            if (_information_gain)
+            {
+                if (!_information_gain->fromParameterServer(ns + "/information_gain"))
+                    return false;
+            }
+            else
+            {
+                ROS_ERROR("URStageCosts: unknown information gain specified.");
+                return false;
+            }
+        }
         else
         {
             _information_gain = {};

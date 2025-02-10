@@ -57,6 +57,7 @@
   <depend>geometry_msgs</depend>
   <depend>gazebo_msgs</depend>
   <depend>visualization_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>urdf</depend>
   <depend>tf</depend>
   <depend>tf_conversions</depend>

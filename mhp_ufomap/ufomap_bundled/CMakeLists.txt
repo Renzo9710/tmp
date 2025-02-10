@@ -32,6 +32,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_sensor_msgs
   pcl_conversions
+  mhp_robot
 )
 
 find_package(CUDA REQUIRED)
@@ -93,7 +94,7 @@ set(CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
 set(LIB_TYPE SHARED)
 
 cuda_add_library(
-  CUDASampLib ${LIB_TYPE} src/ufomap_mapping/calcInfoGain.cu
+  CUDASampLib ${LIB_TYPE} src/ufomap_mapping/ufomapGPU.cu
   )
 
 target_link_libraries(CUDASampLib   
