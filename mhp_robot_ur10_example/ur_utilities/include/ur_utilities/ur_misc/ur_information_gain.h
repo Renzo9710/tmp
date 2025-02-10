@@ -41,57 +41,58 @@
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
 #include <sensor_msgs/PointCloud2.h>
+#include <mhp_robot/MsgInfoPCLS.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
 using URKinematic = mhp_robot::robot_kinematic::URKinematic;
-using URUtility   = mhp_robot::robot_misc::URUtility;
+using URUtility = mhp_robot::robot_misc::URUtility;
 
 class URInformationGain
 {
- public:
-    using Ptr  = std::shared_ptr<URInformationGain>;
-    using UPtr = std::unique_ptr<URInformationGain>;
+public:
+   using Ptr = std::shared_ptr<URInformationGain>;
+   using UPtr = std::unique_ptr<URInformationGain>;
 
-    URInformationGain(ros::NodeHandle* nh, URKinematic* kinematic, URUtility* utility);
+   URInformationGain(ros::NodeHandle *nh, URKinematic *kinematic, URUtility *utility);
 
-    //    Destructor
-    virtual ~URInformationGain() {}
+   //    Destructor
+   virtual ~URInformationGain() {}
 
-    //    Copy and Move and Constructors
-    URInformationGain(const URInformationGain&)            = delete;
-    URInformationGain(URInformationGain&&)                 = default;
-    URInformationGain& operator=(const URInformationGain&) = delete;
-    URInformationGain& operator=(URInformationGain&&)      = default;
+   //    Copy and Move and Constructors
+   URInformationGain(const URInformationGain &) = delete;
+   URInformationGain(URInformationGain &&) = default;
+   URInformationGain &operator=(const URInformationGain &) = delete;
+   URInformationGain &operator=(URInformationGain &&) = default;
 
-    // Callbacks
+   // Callbacks
 
-    // Publish function for ongoing calculation
-    void publish();
+   // Publish function for ongoing calculation
+   void publish();
 
- protected:
- private:
-    // Ros Publisher and Subscriber
-    ros::Subscriber _joint_state_sub;
-    ros::Subscriber _info_pcl_sub;
+protected:
+private:
+   // Ros Publisher and Subscriber
+   ros::Subscriber _joint_state_sub;
+   ros::Subscriber _info_pcl_sub;
 
-    ros::Publisher _info_gain_pub;
+   ros::Publisher _info_gain_pub;
 
-    URKinematic _kinematic;
-    URUtility _utility;
+   URKinematic _kinematic;
+   URUtility _utility;
 
-    std::vector<double> _joint_states;
-    pcl::PointCloud<pcl::PointXYZI> _information_pcl;
+   std::vector<double> _joint_states;
+   pcl::PointCloud<pcl::PointXYZI> _information_pcl;
 
-    Eigen::Matrix4d _tf_cam_to_ee_link = Eigen::Matrix4d::Identity();
+   Eigen::Matrix4d _tf_cam_to_ee_link = Eigen::Matrix4d::Identity();
 
-    bool _first_joint_state = true;
+   bool _first_joint_state = true;
 
-    void inverseDistanceWeigthing(const Eigen::Ref<const Eigen::Vector3d>& point, double& gain) const;
+   void inverseDistanceWeigthing(const Eigen::Ref<const Eigen::Vector3d> &point, double &gain) const;
 
-    // Callbacks
-    void informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
-    void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
+   // Callbacks
+   void informationGainCallback(const mhp_robot::MsgInfoPCLS::ConstPtr &msg);
+   void jointStateCallback(const sensor_msgs::JointState::ConstPtr &msg);
 };
 
-#endif  // UR_DANGER_INDEX_H
+#endif // UR_DANGER_INDEX_H

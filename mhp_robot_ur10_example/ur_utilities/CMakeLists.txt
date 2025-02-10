@@ -161,6 +161,22 @@ target_link_libraries(ur_information_gain
   ${catkin_LIBRARIES}
 )
 
+
+###########################
+# ur_ergodic_trajectory #
+###########################
+add_executable(ur_ergodic_trajectory
+  src/ur_tools/ur_inverse_kinematic_trajectory.cpp
+)
+target_link_libraries(ur_ergodic_trajectory
+  ur_kinematic
+  ur_misc
+  ur_collision
+  ${catkin_LIBRARIES}
+)
+
+
+
 #############
 ## Install ##
 #############

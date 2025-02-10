@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<launch>
+    <node pkg="mhp_planner" type="time_opt_erg_plan.py" name="global_ergodic_reference_planner" output="screen" required="true"/>
+
+    <node pkg="ur_utilities" type="ur_ergodic_trajectory" name="ergodic_traj" output="screen" respawn="true"/>
+</launch>
+

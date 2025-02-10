@@ -5,9 +5,12 @@
 	<arg name="num_workers" default="1" />
 	<arg name="color" default="true" />
 	<arg name="information_distribution" default="false" />
+	<arg name="information_distribution_gpu" default="false" />
 	<arg name="cloud_in" default="/camera/depth/points" />
 	<arg name="num_startpoints" default="1000" />
 	<arg name="num_scaling_gridpoints" default="10" />
+	<arg name="buffer_pcl" default="false" />
+	<arg name="buffer_size" default="20" />
 
   <node pkg="ufomap_bundled" type="ufomap_server_node" name="ufomap_server_node" output="screen" required="true">
 		<remap from="cloud_in" to="$(arg cloud_in)" />
@@ -16,7 +19,12 @@
 		<param name="depth_levels" value="$(arg depth_levels)" />
 		<param name="color_map" value="$(arg color)"/>
 		<param name="information_distribution" value="$(arg information_distribution)" />
+		<param name="information_distribution_gpu" value="$(arg information_distribution_gpu)" />
 		<param name="num_startpoints" value="$(arg num_startpoints)" />
 		<param name="num_scaling_gridpoints" value="$(arg num_scaling_gridpoints)" />
+		<param name="buffer_pcl" value="$(arg buffer_pcl)" />
+		<param name="buffer_size" value="$(arg buffer_size)" />
+		<rosparam command="load" file="$(find ufomap_bundled)/config/params.yaml" />
+
   </node>
 </launch>

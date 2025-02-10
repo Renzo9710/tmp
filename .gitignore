@@ -3,3 +3,5 @@ build/
 .catkin_workspace
 .vscode/
 /CMakeLists.txt
+*.cpython-38.pyc
+/time_optimal_ergodic_search/time_opt_erg_lib/*

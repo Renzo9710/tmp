@@ -1,17 +1,17 @@
 #include <ur_utilities/ur_misc/ur_information_gain.h>
 
-URInformationGain::URInformationGain(ros::NodeHandle* nh, URKinematic* kinematic, URUtility* utility)
+URInformationGain::URInformationGain(ros::NodeHandle *nh, URKinematic *kinematic, URUtility *utility)
 {
 
     // Subscribers for distances, collision Points and current joint velocities
     _joint_state_sub = nh->subscribe("/ur_driver/joint_states", 1, &URInformationGain::jointStateCallback, this);
-    _info_pcl_sub    = nh->subscribe("/ufomap_server_node/info_dist_cloud", 1, &URInformationGain::informationGainCallback, this);
+    _info_pcl_sub = nh->subscribe("/ufomap_server_node/info_dist_cloud", 1, &URInformationGain::informationGainCallback, this);
 
     // Publisher for the gain
     _info_gain_pub = nh->advertise<std_msgs::Float64>("/ur10/info_gain", 1);
     // Kinematic structure as class variable to get partial Jacobians
-    _kinematic    = std::move(*kinematic);
-    _utility      = std::move(*utility);
+    _kinematic = std::move(*kinematic);
+    _utility = std::move(*utility);
     _joint_states = std::vector<double>(_utility.getJointsCount(), 0.0);
 
     tf::StampedTransform transform;
@@ -32,7 +32,7 @@ URInformationGain::URInformationGain(ros::NodeHandle* nh, URKinematic* kinematic
     }
 }
 
-void URInformationGain::jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg)
+void URInformationGain::jointStateCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
     if (_first_joint_state)
     {
@@ -48,7 +48,7 @@ void URInformationGain::jointStateCallback(const sensor_msgs::JointState::ConstP
         _utility.parseJointStates(_joint_states, msg->position);
     }
 }
-void URInformationGain::informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) { pcl::fromROSMsg(*msg, _information_pcl); }
+void URInformationGain::informationGainCallback(const mhp_robot::MsgInfoPCLS::ConstPtr &msg) { pcl::fromROSMsg(msg->pcls[msg->pcls.size() - 1], _information_pcl); }
 
 void URInformationGain::publish()
 {
@@ -59,10 +59,10 @@ void URInformationGain::publish()
     while (ros::ok())
     {
         double factor = 1;
-        double gain   = 0;
+        double gain = 0;
         // std::cout << "Information pcl size: " << _information_pcl.size() << std::endl;
         // std::cout << "Joint states size: " << _joint_states.size() << std::endl;
-        if (_information_pcl.size() > 0 && _joint_states.size() > 0)  // be sure we already received a point cloud
+        if (_information_pcl.size() > 0 && _joint_states.size() > 0) // be sure we already received a point cloud
         {
             // get the transformation from depth camera to world for joint configuration x_k
             Eigen::VectorXd x_k = Eigen::Map<Eigen::VectorXd>(_joint_states.data(), _joint_states.size());
@@ -95,14 +95,14 @@ void URInformationGain::publish()
         // std::cout << "Gain: " << gain << std::endl;
         std_msgs::Float64 msg;
         msg.data = factor * gain;
-        _info_gain_pub.publish(msg);  // add small epsilon to avoid division by zero
+        _info_gain_pub.publish(msg); // add small epsilon to avoid division by zero
 
-        ros::spinOnce();  // execute callbacks
+        ros::spinOnce(); // execute callbacks
         loop.sleep();
     }
 }
 
-void URInformationGain::inverseDistanceWeigthing(const Eigen::Ref<const Eigen::Vector3d>& point, double& gain) const
+void URInformationGain::inverseDistanceWeigthing(const Eigen::Ref<const Eigen::Vector3d> &point, double &gain) const
 {
     // get the distance to the point cloud points (with Eigen Matrix for vectorized operations)
     Eigen::MatrixXd pcl_points = Eigen::MatrixXd::Zero(3, _information_pcl.size());
@@ -116,10 +116,10 @@ void URInformationGain::inverseDistanceWeigthing(const Eigen::Ref<const Eigen::V
     dists = (pcl_points.colwise() - point).colwise().norm();
     // std::cout << "Dists: " << dists << std::endl;
     // get the inverse distance weighting
-    int p         = 2;  // power of the inverse distance weighting
+    int p = 2; // power of the inverse distance weighting
     dists.array() = dists.array().pow(-p);
     // std::cout<< "Dists after pow: " << dists << std::endl;
-    gain          = 0;
+    gain = 0;
     for (int i = 0; i < _information_pcl.size(); ++i)
     {
         gain += (dists(i) / dists.sum()) * _information_pcl.points[i].intensity;

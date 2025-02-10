@@ -12,12 +12,20 @@
 
 <arg name="pc_frame_name" value="depth_camera_link" if="$(eval camera_type== 'azure_kinect')"/>
 <arg name="pc_frame_name" value="camera_link" if="$(eval camera_type== 'intel_realsense')"/>
+<arg name="pc_frame_name" value="fixed_depth_camera" if="$(eval camera_type== 'rosbag')"/>
+
+<param name="depth_camera_frame" value="$(arg pc_frame_name)"/>
+
 
 <arg name="num_startpoints" default="500" />
 <arg name="num_scaling_gridpoints" default="100" />
+<arg name="information_distribution_gpu" default="true" />
+<arg name="buffer_pcl" default="true" />
+<arg name="buffer_size" default="10" />
 
 <arg name="nbv_goals" value="false" />
 <arg name="publish_gain" value="true" />
+
 <!-- ur10 visualization launch node -->
 
 <group if="$(eval camera_type== 'azure_kinect')">
@@ -47,8 +55,6 @@
 </group>
 
 <group if="$(eval camera_type== 'rosbag')" ns="rosbag_pcl">
-  <!-- <param name="use_sim_time" value="false" /> -->
-  <!-- <node pkg="tf" type="static_transform_publisher" name="world_rosbag" args=" 0.0 0.0 0.0 0.0 0.0 0.0 camera_3d_frame_points depth_camera_link 1" /> -->
   <param name="rosbag_name" value="$(find ufomap_bundled)/config/pcl_test_data.bag" />
   <param name="bag_loop" value="true" />
   <param name="bag_start_time" value="0" />
@@ -58,10 +64,6 @@
   <node pkg="pcl_filters" type="rosbag_pcl_play_node" name="rosbag_pcl_play_node" output="screen" />
 
   <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /rosbag_pcl/rosbag_pcl_play_node/start_pcl_replay true"/>
-
-  <!-- Static Transform Publisher between world (UR10) & realsense -->
-  <!-- <node pkg="rosbag" type="record" name="recorder" output="log" args="-o bag_res_0.01_out0.1_10 /filtered_cloud /occupied_cells_vis_array" required="false"/>  -->
-  <!-- <node pkg="octomap_server" type="octomap_saver" name="octomap_saver" output="screen" args="-f map_res_0.01_out0.1_10.bt" required="true" launch-prefix="bash -c 'sleep 32; $0 $@' "/> -->
 </group>
 
 <!-- point cloud filtering node> -->
@@ -84,12 +86,13 @@
     <arg name="num_workers" value="8" />
     <arg name="cloud_in" value="/filtered_cloud" />
     <arg name="information_distribution" value="true" />
+    <arg name="information_distribution_gpu" value="$(arg information_distribution_gpu)" />
+    <arg name="buffer_pcl" value="$(arg buffer_pcl)" />
+    <arg name="buffer_size" value="$(arg buffer_size)" />
 
     <arg name="num_startpoints" value="$(arg num_startpoints)" />
     <arg name="num_scaling_gridpoints" value="$(arg num_scaling_gridpoints)" />
   </include>
-  <!-- <node pkg="rosbag" type="record" name="recorder" output="log" args="-o bag_res_0.01_out_0.01_2 /filtered_cloud /ufomap_server_node/map" required="false"/>  -->
-  <!-- <node pkg="ufomap_bundled" type="ufomap_saver_node" name="ufomap_saver_node" output="screen" args="-f map_res_0.01_out_0.01_2.um" required="true" launch-prefix="bash -c 'sleep 32; $0 $@' "/> -->
 
 
 <group if="$(arg nbv_goals)">

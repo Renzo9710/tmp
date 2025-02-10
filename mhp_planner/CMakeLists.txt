@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
     mhp_robot
 )
 
+catkin_python_setup()
+
 
 ###################################
 ## catkin specific configuration ##
@@ -218,6 +220,9 @@ endif(IPOPT_FOUND)
 #############
 ## Install ##
 #############
+
+catkin_install_python(PROGRAMS scripts/time_opt_erg_plan.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 
 install(DIRECTORY include/ extern/eigen3/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

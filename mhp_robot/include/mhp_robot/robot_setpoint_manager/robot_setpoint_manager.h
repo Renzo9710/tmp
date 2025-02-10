@@ -68,9 +68,11 @@ class RobotSetPointManager
     using RobotCollision = robot_collision::RobotCollision;
     using Obstacle       = robot_misc::Obstacle;
     using ObstacleList   = robot_obstacle::ObstacleList;
+    using Common         = robot_misc::Common;
 
     RobotCollision::UPtr _robot_collision;
     ObstacleList _obstacle_manager;
+    ros::Subscriber _obstacle_subscriber;
 
     std::vector<Eigen::MatrixXd> _waypoints;
     std::vector<double> _time;
@@ -78,7 +80,9 @@ class RobotSetPointManager
     std::vector<std::vector<std::pair<int, double>>> _dp_table;
 
     double _qd_min                 = -0.5;
+    Eigen::VectorXd _qd_min_vector;
     double _qd_max                 = 0.5;
+    Eigen::VectorXd _qd_max_vector;
     double _min_self_collision     = 0.01;
     double _min_obstacle_collision = 0.01;
     double _min_ground_collision   = 0.01;
@@ -87,12 +91,16 @@ class RobotSetPointManager
     double _min_human_collision    = 0.01;
     bool _dynamic_obstacles        = false;
     bool _human_obstacles          = false;
+    bool _check_obs                = true;
 
     std::vector<double> _q_min;
     std::vector<double> _q_max;
+    std::vector<Obstacle> _static_obstacles;
 
     virtual void validateJointState(const Eigen::Ref<const Eigen::MatrixXd>& solutions, std::vector<bool>& selector);
     virtual bool checkContinuity(const Eigen::Ref<const Eigen::VectorXd>& current, const Eigen::Ref<const Eigen::VectorXd>& next, double time) const;
+    void obstacleCallback(const mhp_robot::MsgObstacleListConstPtr& msg);
+
 };
 
 }  // namespace robot_set_point_manager
