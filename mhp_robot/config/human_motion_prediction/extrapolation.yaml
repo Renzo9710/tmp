@@ -23,5 +23,5 @@
 #  *********************************************************************/
 
 
-extrapolation_steps: 5 # Number of extrapolation steps for extrapolation models
+extrapolation_steps: 21 # Number of extrapolation steps for extrapolation models
 constant_velocity_model: false # If false, the extrapolation uses constant acceleration model

@@ -43,27 +43,23 @@
 
 namespace ufo::map
 {
-OccupancyMapColor::OccupancyMapColor(double resolution, DepthType depth_levels,
-                                     bool automatic_pruning, double occupied_thres,
-                                     double free_thres, double prob_hit, double prob_miss,
+OccupancyMapColor::OccupancyMapColor(double resolution, DepthType depth_levels, bool automatic_pruning,
+                                     double occupied_thres, double free_thres, double prob_hit, double prob_miss,
                                      double clamping_thres_min, double clamping_thres_max)
-    : OccupancyMapBase(resolution, depth_levels, automatic_pruning, occupied_thres,
-                       free_thres, prob_hit, prob_miss, clamping_thres_min,
-                       clamping_thres_max)
+  : OccupancyMapBase(resolution, depth_levels, automatic_pruning, occupied_thres, free_thres, prob_hit, prob_miss,
+                     clamping_thres_min, clamping_thres_max)
 {
 }
 
-OccupancyMapColor::OccupancyMapColor(std::string const& filename, bool automatic_pruning,
-                                     double occupied_thres, double free_thres,
-                                     double prob_hit, double prob_miss,
-                                     double clamping_thres_min, double clamping_thres_max)
-    : OccupancyMapBase(filename, automatic_pruning, occupied_thres, free_thres, prob_hit,
-                       prob_miss, clamping_thres_min, clamping_thres_max)
+OccupancyMapColor::OccupancyMapColor(std::string const& filename, bool automatic_pruning, double occupied_thres,
+                                     double free_thres, double prob_hit, double prob_miss, double clamping_thres_min,
+                                     double clamping_thres_max)
+  : OccupancyMapBase(filename, automatic_pruning, occupied_thres, free_thres, prob_hit, prob_miss, clamping_thres_min,
+                     clamping_thres_max)
 {
 }
 
-OccupancyMapColor::OccupancyMapColor(OccupancyMapColor const& other)
-    : OccupancyMapBase(other)
+OccupancyMapColor::OccupancyMapColor(OccupancyMapColor const& other) : OccupancyMapBase(other)
 {
 }
 
@@ -73,39 +69,60 @@ OccupancyMapColor::OccupancyMapColor(OccupancyMapColor const& other)
 
 void OccupancyMapColor::setColor(Code const& code, Color color)
 {
-	auto path = Base::createNode(code);
-	DepthType depth = code.getDepth();
-	path[depth]->value.color = color;
+  auto path = Base::createNode(code);
+  DepthType depth = code.getDepth();
+  path[depth]->value.color = color;
 
-	Base::updateParents(path, depth);
+  Base::updateParents(path, depth);
+}
+
+//
+// Set Prediction
+//
+void OccupancyMapColor::setPrediction(Code const& code, Prediction prediction)
+{
+  auto path = Base::createNode(code);
+  DepthType depth = code.getDepth();
+  path[depth]->value.prediction = prediction;
+
+  Base::updateParents(path, depth);
 }
 
 //
 // Get color
 //
 
-Color OccupancyMapColor::getColor(Code const& code) const
-{
-	return Base::getNode(code).first->value.color;
-}
+// Color OccupancyMapColor::getColor(Code const& code) const
+// {
+//   return Base::getNode(code).first->value.color;
+// }
+
+//
+// Get Prediction --> Due to CUDA into header file
+// CUDA_CALL Prediction OccupancyMapColor::getPrediction(Code const& code) const
+// {
+//   return Base::getNode(code).first->value.prediction;
+// }
 
 //
 // Integrate colors
 //
 
-void OccupancyMapColor::integrateColors(Point3 const& sensor_origin,
-                                        PointCloudColor const& cloud, double max_range)
+void OccupancyMapColor::integrateColors(Point3 const& sensor_origin, PointCloudColor const& cloud, double max_range)
 {
-	CodeMap<std::vector<Color>> colors;
-	for (Point3Color const& point : cloud) {
-		if (0 > max_range || (point - sensor_origin).norm() < max_range) {
-			colors[Base::toCode(point)].push_back(point.getColor());
-		}
-	}
+  CodeMap<std::vector<Color>> colors;
+  for (Point3Color const& point : cloud)
+  {
+    if (0 > max_range || (point - sensor_origin).norm() < max_range)
+    {
+      colors[Base::toCode(point)].push_back(point.getColor());
+    }
+  }
 
-	for (auto const& [code, color] : colors) {
-		updateNodeColor(code, getAverageColor(color));
-	}
+  for (auto const& [code, color] : colors)
+  {
+    updateNodeColor(code, getAverageColor(color));
+  }
 }
 
 //
@@ -114,11 +131,30 @@ void OccupancyMapColor::integrateColors(Point3 const& sensor_origin,
 
 bool OccupancyMapColor::updateNode(INNER_NODE& node, DepthType depth)
 {
-	Color new_color = getAverageChildColor(node, depth);
-	bool changed = Base::updateNode(node, depth);
-	changed = changed || (node.value.color != new_color);
-	node.value.color = new_color;
-	return changed;
+  Color new_color = getAverageChildColor(node, depth);
+  bool changed = Base::updateNode(node, depth);
+  changed = changed || (node.value.color != new_color);
+  node.value.color = new_color;
+  return changed;
+}
+
+bool OccupancyMapColor::updateNodeSetColor(INNER_NODE& node, DepthType depth, Color new_color)
+{
+  bool changed = Base::updateNode(node, depth);
+  changed = changed || (node.value.color != new_color);
+  node.value.color = new_color;
+  return changed;
+}
+
+bool OccupancyMapColor::updateNodeSetPrediction(INNER_NODE& node, DepthType depth,
+                                                std::tuple<double, Prediction>& new_prediction)
+{
+  bool changed = Base::updateNode(node, depth);
+  int elem = static_cast<int>(std::get<0>(new_prediction) * 10);  // TODO(renz): Check if better siwtch to int as elem instead of time input
+  changed = changed || (node.value.prediction.getAllPrediction() != std::get<1>(new_prediction).getAllPrediction());
+  node.value.prediction.integrate(std::get<1>(new_prediction), elem);
+
+  return changed;
 }
 
 //
@@ -127,70 +163,77 @@ bool OccupancyMapColor::updateNode(INNER_NODE& node, DepthType depth)
 
 void OccupancyMapColor::updateNodeColor(Code code, Color update)
 {
-	if (!update.isSet()) {
-		return;
-	}
+  if (!update.isSet())
+  {
+    return;
+  }
 
-	auto path = Base::createNode(code);
-	DepthType depth = code.getDepth();
+  auto path = Base::createNode(code);
+  DepthType depth = code.getDepth();
 
-	updateNodeColor(*path[depth], update, 1.0 - Base::getOccupancy(*path[depth]));
+  updateNodeColor(*path[depth], update, 1.0 - Base::getOccupancy(*path[depth]));
 
-	Base::updateParents(path, depth);
+  Base::updateParents(path, depth);
 }
 
 void OccupancyMapColor::updateNodeColor(LEAF_NODE& node, Color update, double prob)
 {
-	Color& current = node.value.color;
+  Color& current = node.value.color;
 
-	if (current == update) {
-		return;
-	}
+  if (current == update)
+  {
+    return;
+  }
 
-	if (!current.isSet()) {
-		current = update;
-	} else {
-		double total_prob = prob + Base::getOccupancy(node);
-		prob /= total_prob;
+  if (!current.isSet())
+  {
+    current = update;
+  }
+  else
+  {
+    double total_prob = prob + Base::getOccupancy(node);
+    prob /= total_prob;
 
-		// double prob = std::max(0.0, std::min(2.0 * (Base::getOccupancy(node) - 0.5), 0.9));
-		double prob_inv = 1.0 - prob;
+    // double prob = std::max(0.0, std::min(2.0 * (Base::getOccupancy(node) - 0.5), 0.9));
+    double prob_inv = 1.0 - prob;
 
-		double c_r = static_cast<double>(current.r);
-		double c_g = static_cast<double>(current.g);
-		double c_b = static_cast<double>(current.b);
+    double c_r = static_cast<double>(current.r);
+    double c_g = static_cast<double>(current.g);
+    double c_b = static_cast<double>(current.b);
 
-		double u_r = static_cast<double>(update.r);
-		double u_g = static_cast<double>(update.g);
-		double u_b = static_cast<double>(update.b);
+    double u_r = static_cast<double>(update.r);
+    double u_g = static_cast<double>(update.g);
+    double u_b = static_cast<double>(update.b);
 
-		current.r = std::sqrt(((c_r * c_r) * prob_inv) + ((u_r * u_r) * prob));
-		current.g = std::sqrt(((c_g * c_g) * prob_inv) + ((u_g * u_g) * prob));
-		current.b = std::sqrt(((c_b * c_b) * prob_inv) + ((u_b * u_b) * prob));
-	}
+    current.r = std::sqrt(((c_r * c_r) * prob_inv) + ((u_r * u_r) * prob));
+    current.g = std::sqrt(((c_g * c_g) * prob_inv) + ((u_g * u_g) * prob));
+    current.b = std::sqrt(((c_b * c_b) * prob_inv) + ((u_b * u_b) * prob));
+  }
 }
 
 //
 // Average child color
 //
 
-Color OccupancyMapColor::getAverageChildColor(INNER_NODE const& node,
-                                              DepthType depth) const
+Color OccupancyMapColor::getAverageChildColor(INNER_NODE const& node, DepthType depth) const
 {
-	if (!hasChildren(node)) {
-		return node.value.color;
-	}
+  if (!hasChildren(node))
+  {
+    return node.value.color;
+  }
 
-	std::vector<Color> colors;
+  std::vector<Color> colors;
 
-	for (int i = 0; i < 8; ++i) {
-		LEAF_NODE& child = getChild(node, depth - 1, i);
-		if (child.value.color.isSet()) {
-			colors.push_back(child.value.color);
-		}
-	}
+  for (int i = 0; i < 8; ++i)
+  {
+    LEAF_NODE& child = getChild(node, depth - 1, i);
+    if (child.value.color.isSet())
+    {
+      colors.push_back(child.value.color);
+    }
+  }
 
-	return getAverageColor(colors);
+  return getAverageColor(colors);
 }
 
 //
@@ -199,25 +242,26 @@ Color OccupancyMapColor::getAverageChildColor(INNER_NODE const& node,
 
 Color OccupancyMapColor::getAverageColor(std::vector<Color> const& colors) const
 {
-	if (colors.empty()) {
-		return Color();
-	}
+  if (colors.empty())
+  {
+    return Color();
+  }
 
-	// TODO: Update to LAB space?
-	double r = 0;
-	double g = 0;
-	double b = 0;
-	for (Color const& color : colors) {
-		double color_r = static_cast<double>(color.r);
-		double color_g = static_cast<double>(color.g);
-		double color_b = static_cast<double>(color.b);
+  // TODO(Anonymous): Update to LAB space?
+  double r = 0;
+  double g = 0;
+  double b = 0;
+  for (Color const& color : colors)
+  {
+    double color_r = static_cast<double>(color.r);
+    double color_g = static_cast<double>(color.g);
+    double color_b = static_cast<double>(color.b);
 
-		r += (color_r * color_r);
-		g += (color_g * color_g);
-		b += (color_b * color_b);
-	}
-	double num_colors = static_cast<double>(colors.size());
-	return Color(std::sqrt(r / num_colors), std::sqrt(g / num_colors),
-	             std::sqrt(b / num_colors));
+    r += (color_r * color_r);
+    g += (color_g * color_g);
+    b += (color_b * color_b);
+  }
+  double num_colors = static_cast<double>(colors.size());
+  return Color(std::sqrt(r / num_colors), std::sqrt(g / num_colors), std::sqrt(b / num_colors));
 }
 }  // namespace ufo::map

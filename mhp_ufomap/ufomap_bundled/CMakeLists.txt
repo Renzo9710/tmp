@@ -33,6 +33,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_sensor_msgs
   pcl_conversions
   mhp_robot
+  eigen_conversions
 )
 
 find_package(CUDA REQUIRED)

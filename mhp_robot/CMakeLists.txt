@@ -67,6 +67,8 @@ add_message_files(
   MsgFutureAngles.msg
   MsgUncertaintyState.msg
   MsgInfoPCLS.msg
+  MsgOcclusionDist.msg
+  MsgErrorTracking.msg
 )
 
 # Generate services in the 'srv' folder
@@ -286,6 +288,13 @@ add_library(robot_trajectory_optimization STATIC
   src/robot_trajectory_optimization/robot_information_gain.cpp
   src/robot_trajectory_optimization/robot_information_gain_simple.cpp
   src/robot_trajectory_optimization/robot_information_gain_time_decrease.cpp
+  src/robot_trajectory_optimization/robot_information_gain_potential.cpp
+
+  src/robot_trajectory_optimization/robot_occlusion_potential.cpp
+  src/robot_trajectory_optimization/robot_occlusion_potential_distance.cpp
+
+  src/robot_trajectory_optimization/robot_observation_exploration.cpp
+  src/robot_trajectory_optimization/robot_observation_exploration_distance.cpp
 )
 target_link_libraries(robot_trajectory_optimization
   ${catkin_LIBRARIES}

@@ -1,0 +1,6 @@
+std_msgs/Header header
+
+float64 distance_cam_to_tracking
+float64 distance_poi_to_tracking
+float64 angle_cam_to_tracking
+bool line_of_sight_occluded

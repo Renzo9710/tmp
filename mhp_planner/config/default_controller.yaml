@@ -47,14 +47,14 @@ controller:
       ur_stage_cost:
         cost_function:
           stage_cost_function_type: URQuadraticCostJointSpace # Later release may add task space cost function
-          evaluate_states: true
-          evaluate_controls: true
+          evaluate_states: false
+          evaluate_controls: false
           evaluate_control_deviation: false
           Q: [2.0,2.0,2.0,2.0,2.0,2.0] 
           R: [1.0,1.0,1.0,1.0,1.0,1.0]
           Rd: [1.0,1.0,1.0,1.0,1.0,1.0]
         collision_potential:
-          collision_potential_type: URCollisionPotentialMohri # Later release may add various potential functions; URCollisionPotentialMohri or None for no potential function
+          collision_potential_type: None # Later release may add various potential functions; URCollisionPotentialMohri or None for no potential function
       
           # Weigths and margins for obstacle classes in this order: self_collision, static_obstacles, dynamic_obstacles, ground_collision, roof_collision,plane_collision, human_head_collision, human_trunk_collision, human_limbs_collision
           weights: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
@@ -89,11 +89,49 @@ controller:
           # Use a uncertainty estimation (if no estimation is available this function is deactivated) for the human motion extrapoaltions
           uncertainty_estimation_human: true
           uncertainty_mode: SkeletonSplitting # None or SkeletonSplitting or RadiusIncrease
-        information_gain:
-          information_gain_type: URInformationGainTimeDecrease # None, URInformationGainSimple, URInformationGainTimeDecrease
-          weight: 100.0        
+        secondary_costs:
+          secondary_costs_type: UROcclusionPotential # URInformationGain, UROcclusionPotential, URObservationExploration or None for no secondary costs
+          information_gain:
+            information_gain_type: URInformationGainPotential # None, URInformationGainSimple(only first param), URInformationGainTimeDecrease(only first param), URInformationGainPotential
+            weight: 1.0        
+            weight_distance: 100.0
+            weight_orientation: 1.0
+            optimal_view_distance: 1.5
+            gain_margin: 0.5
+          occlusion_potential:
+            occlusion_potential_type: UROcclusionPotentialDistance # None, UROcclusionPotentialDistance
+            w_position: 1.0
+            w_orientation: 2.0
+            w_position_distance: 1.0
+            optimal_view_distance: 1.5
+            distance_margin_to_occlusion: 0.3
+            theta_margin_to_occlusion: 0.8
+            phi_margin_to_occlusion: 0.8
+            min_distance: false
+            use_occlusion_prediction: false
+          observation_exploration:
+            observation_exploration_type: URObservationExplorationDistance # None URObservationExplorationDistance
+            switch_distance: 0.5
+            information_gain:
+              information_gain_type: URInformationGainPotential # None, URInformationGainSimple(only first param), URInformationGainTimeDecrease(only first param), URInformationGainPotential
+              weight: 1.0
+              weight_distance: 100.0
+              weight_orientation: 1.0
+              optimal_view_distance: 1.5
+              gain_margin: 0.5
+            occlusion_potential:
+              occlusion_potential_type: UROcclusionPotentialDistance # None, UROcclusionPotentialDistance
+              w_position: 1.0
+              w_orientation: 2.0
+              w_position_distance: 1.0
+              optimal_view_distance: 1.5
+              distance_margin_to_occlusion: 0.3
+              theta_margin_to_occlusion: 0.8
+              phi_margin_to_occlusion: 0.8
+              min_distance: false
+              use_occlusion_prediction: false
     final_stage_cost:
-      final_stage_cost_type: URFinalStageCost #URFinalStageCost or None for no stage costs
+      final_stage_cost_type: None #URFinalStageCost or None for no stage costs
       ur_final_stage_cost:
         cost_function:
           stage_cost_function_type: URQuadraticCostJointSpace # Later release may add task space cost function
@@ -177,13 +215,13 @@ controller:
           use_preprocessor: false
 
           # Potential function is calculated only for the smallest distance of each obstacle
-          min_distances: false
+          min_distances: true
 
           # Potential function with considering obstacle predictions are only using snapshot of current configuration
-          obstacle_prediction: true
+          obstacle_prediction: false
 
           # Use the planner delay as prediction offset for each obstacle
-          prediction_offset: true
+          prediction_offset: false
     final_stage_constraints:
       final_stage_constraints_type: None #None or URFinalStateConstraintJointSpace
       ur_final_state_constraint_joint_space:

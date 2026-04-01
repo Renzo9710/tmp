@@ -36,7 +36,7 @@ namespace mhp_robot
             for (int i = 0; i < x_k.size(); ++i)
             {
                 diff(i) = _eps;
-                dx(i) = (computeGain(k, x_k + diff) - computeGain(k, x_k - diff)) / (2 * _eps);
+                dx(i) = (computeCost(k, x_k + diff) - computeCost(k, x_k - diff)) / (2 * _eps);
                 diff(i) = 0.0;
             }
         }
@@ -109,12 +109,24 @@ namespace mhp_robot
         {
             _dt = dt;
 
+            _pcl_mutex.lock();
+            _information_pcl = _information_pcl_cb;
+            _pcl_num = _pcl_num_cb;
+            _new_pcl = _new_pcl_cb;
+            _pcl_mutex.unlock();
+
             return false;
         }
 
         bool RobotInformationGain::isInitialized() const { return _initialized; }
 
-        void RobotInformationGain::informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr &msg) { pcl::fromROSMsg(*msg, _information_pcl); }
+        void RobotInformationGain::informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
+        {
+        pcl::fromROSMsg(*msg, _information_pcl_cb);
+        _pcl_num_cb = _information_pcl_cb.size();
+        _new_pcl_cb = true;
+        }
+        
         void RobotInformationGain::informationGainCallbackBuffer(const mhp_robot::MsgInfoPCLS::ConstPtr &msg)
         {
             _information_pcl.clear();
@@ -128,14 +140,10 @@ namespace mhp_robot
             }
 
             _pcl_mutex.lock();
-            _information_pcl = pcl_all;
+            _information_pcl_cb = pcl_all;
+            _pcl_num_cb = _information_pcl_cb.size();
+            _new_pcl_cb = true;
             _pcl_mutex.unlock();
-            _pcl_num_mutex.lock();
-            _pcl_num = _information_pcl.size();
-            _pcl_num_mutex.unlock();
-            _new_pcl_mutex.lock();
-            _new_pcl = true;
-            _new_pcl_mutex.unlock();
         }
 
     } // namespace robot_trajectory_optimization

@@ -124,7 +124,7 @@ namespace mhp_planner
         if (_reference_mode == PATHPILOT &&
             (!_ur_path_pilot || !_ur_path_pilot->initialize(std::make_unique<URCollision>(), std::make_unique<URKinematic>())))
         {
-            PRINT_ERROR("URTaskCORBO: Path Pilot initialization failed. Using callback mode.");
+            PRINT_ERROR("URTask: Path Pilot initialization failed. Using callback mode.");
             _reference_mode = CALLBACK;
         }
         URBasePathPilotCORBO::SubReference sub_reference;
@@ -138,13 +138,73 @@ namespace mhp_planner
         std::string dynamic_obstacle_update_topic = "/robot_workspace_monitor/obstacles";
         std::string start_envrionment_service = "/bag_parser/robot_tf_bag_parser/start_simulation";
         std::string prediction_marker_topic = "prediction";
+        std::string information_gain_target_topic = "/ufomap_server_node/info_dist_points_max";
+        std::string occlusion_target_topic = "/ufomap_server_node/occlusion_target";
 
-        ros::Subscriber state_target_sub = n.subscribe(state_target_topic, 1, &URTask::stateTargetCallback, this, ros::TransportHints().tcpNoDelay());
-        PRINT_INFO("URTask:  listening for state targets on topic " << state_target_topic << ".");
+        ros::Subscriber information_gain_sub;
+        ros::Subscriber occlusion_target_sub;
+        ros::Subscriber state_target_sub;
+        ros::Subscriber task_space_target_sub;
+        if (_info_exploration && !_occlusion_observation)
+        {
+            information_gain_sub =
+                n.subscribe(information_gain_target_topic, 1, &URTask::informationTargetCallback, this, ros::TransportHints().tcpNoDelay());
+            PRINT_INFO(
+                "URTask:  listening for information gain target on topic. Don't listen to other state targets or task "
+                "space targets "
+                << information_gain_target_topic << ".");
 
-        ros::Subscriber task_space_target_sub =
-            n.subscribe(task_space_target_topic, 1, &URTask::taskSpaceTargetCallback, this, ros::TransportHints().tcpNoDelay());
-        PRINT_INFO("URTask:  listening for custom targets on topic " << task_space_target_topic << ".");
+            _setpoint_manager_info_exploration = std::make_unique<RobotSetPointManager>(std::make_unique<URCollision>());
+            _sm_objective_info_exploration = std::make_unique<EuclideanSetpointObjective>(Eigen::VectorXd::Zero(_ur_utility->getJointsCount()));
+            _sm_solution_info_exploration = Eigen::VectorXd::Zero(_ur_utility->getJointsCount());
+        }
+        else if (_occlusion_observation && !_info_exploration)
+        {
+            occlusion_target_sub =
+                n.subscribe(occlusion_target_topic, 1, &URTask::occlusionTargetCallback, this, ros::TransportHints().tcpNoDelay());
+            PRINT_INFO(
+                "URTask:  listening for occlusion target on topic. Don't listen to other state targets or task space "
+                "targets "
+                << occlusion_target_topic << ".");
+            _setpoint_manager_occ_observation = std::make_unique<RobotSetPointManager>(std::make_unique<URCollision>());
+            _sm_objective_occ_observation = std::make_unique<EuclideanSetpointObjective>(Eigen::VectorXd::Zero(_ur_utility->getJointsCount()));
+            _sm_solution_occ_observation = Eigen::VectorXd::Zero(_ur_utility->getJointsCount());
+        }
+        else if (_info_exploration && _occlusion_observation)
+        {
+            information_gain_sub =
+                n.subscribe(information_gain_target_topic, 1, &URTask::informationTargetCallback, this, ros::TransportHints().tcpNoDelay());
+            PRINT_INFO(
+                "URTask:  listening for information gain target on topic. Also listen to other state targets or task "
+                "space targets "
+                << information_gain_target_topic << ".");
+
+            occlusion_target_sub =
+                n.subscribe(occlusion_target_topic, 1, &URTask::occlusionTargetCallback, this, ros::TransportHints().tcpNoDelay());
+            PRINT_INFO(
+                "URTask:  listening for occlusion target on topic. Also listen to other state targets or task space "
+                "targets "
+                << occlusion_target_topic << ".");
+            _setpoint_manager_info_exploration = std::make_unique<RobotSetPointManager>(std::make_unique<URCollision>());
+            _sm_objective_info_exploration = std::make_unique<EuclideanSetpointObjective>(Eigen::VectorXd::Zero(_ur_utility->getJointsCount()));
+            _sm_objective_info_exploration->setUseOnlyFirstNDimensions(3);
+            _sm_solution_info_exploration = Eigen::VectorXd::Zero(_ur_utility->getJointsCount());
+            _setpoint_manager_occ_observation = std::make_unique<RobotSetPointManager>(std::make_unique<URCollision>());
+            _sm_objective_occ_observation = std::make_unique<EuclideanSetpointObjective>(Eigen::VectorXd::Zero(_ur_utility->getJointsCount()));
+            _sm_objective_occ_observation->setUseOnlyFirstNDimensions(3);
+            _sm_solution_occ_observation = Eigen::VectorXd::Zero(_ur_utility->getJointsCount());
+
+            _observation_exploration = true;
+        }
+        else
+        {
+            state_target_sub = n.subscribe(state_target_topic, 1, &URTask::stateTargetCallback, this, ros::TransportHints().tcpNoDelay());
+            PRINT_INFO("URTask:  listening for state targets on topic " << state_target_topic << ".");
+
+            task_space_target_sub =
+                n.subscribe(task_space_target_topic, 1, &URTask::taskSpaceTargetCallback, this, ros::TransportHints().tcpNoDelay());
+            PRINT_INFO("URTask:  listening for custom targets on topic " << task_space_target_topic << ".");
+        }
 
         ros::Subscriber virtual_obstacle_sub =
             n.subscribe(dynamic_obstacle_update_topic, 1, &URTask::obstacleCallback, this, ros::TransportHints().tcpNoDelay());
@@ -496,6 +556,222 @@ namespace mhp_planner
         _new_sref = true;
     }
 
+    void URTask::informationTargetCallback(const geometry_msgs::Pose &msg)
+    {
+        PRINT_INFO_ONCE("URTaskCORBO: Received information gain target.");
+
+        // if (_new_info_target)
+        if (true)
+        {
+            // Calculate RPY angles for Lookat axis
+            Eigen::AngleAxisd angax(msg.orientation.w, Eigen::Vector3d{msg.orientation.x, msg.orientation.y, msg.orientation.z});
+            Eigen::Vector3d x_axis = angax.axis().normalized();
+            Eigen::Vector3d z_axis = Eigen::Vector3d::UnitY().cross(x_axis).normalized();
+            Eigen::Vector3d y_axis = z_axis.cross(x_axis).normalized();
+            Eigen::Matrix3d rot;
+            rot << x_axis, y_axis, z_axis;
+            double roll, pitch, yaw;
+            Eigen::Vector3d euler = rot.eulerAngles(2, 1, 0).reverse();
+            roll = euler[0];
+            pitch = euler[1];
+            yaw = euler[2];
+
+            // Set Task point of info gain target
+            _ur_inverse_kinematic->setTaskPoint(Eigen::Vector3d{msg.position.x, msg.position.y, msg.position.z}, roll, pitch, yaw);
+
+            // always validate
+            std::vector<Eigen::VectorXd> validated_target;
+            _setpoint_manager_info_exploration->setJointSpaceWaypoints({_ur_inverse_kinematic->getSolutions()}, {0.0});
+            _setpoint_manager_info_exploration->validate();
+
+            // measure current state
+            Eigen::VectorXd measured_state_new;
+            _state_reference->getReference(Time(0.0), measured_state_new);
+
+            _sm_objective_info_exploration->setReferenceState(measured_state_new);
+
+            if (!_setpoint_manager_info_exploration->getOptimalWaypoints(*_sm_objective_info_exploration, validated_target))
+            {
+                PRINT_INFO_ONCE("URTaskCORBO: Info gain task waypoint not reachable. Using current state.");
+                // check if set point changed
+                if (!_sm_solution_info_exploration.isApprox(measured_state_new))
+                {
+                    _sm_solution_info_exploration = measured_state_new;
+
+                    TimeSeries state_ts(_state_reference_callback->getDimension());
+                    state_ts.add(0, _sm_solution_info_exploration);
+
+                    if (_observation_exploration)
+                    {
+                        if (!_is_tracking_mode)
+                        {
+                            _state_reference_callback->setTrajectory(state_ts);
+                            _new_xref = true;
+                            _new_info_target = false;
+                        }
+                    }
+                    else if (!_occlusion_observation)
+                    {
+                        _state_reference_callback->setTrajectory(state_ts);
+                        _new_xref = true;
+                        _new_info_target = false;
+                    }
+                }
+            }
+            else if (!_sm_solution_info_exploration.isApprox(validated_target.front())) // check if set point changed
+            {
+                PRINT_INFO_ONCE("URTaskCORBO: Setpoint Changed.");
+                _sm_solution_info_exploration = validated_target.front();
+
+                TimeSeries state_ts(_state_reference_callback->getDimension());
+                state_ts.add(0, _sm_solution_info_exploration);
+                if (_observation_exploration)
+                {
+                    if (!_is_tracking_mode)
+                    {
+                        _state_reference_callback->setTrajectory(state_ts);
+                        _new_xref = true;
+                        _new_info_target = false;
+                    }
+                }
+                else if (!_occlusion_observation)
+                {
+                    _state_reference_callback->setTrajectory(state_ts);
+                    _new_xref = true;
+                    _new_info_target = false;
+                }
+            }
+            else
+            {
+                PRINT_WARNING_ONCE("URTaskCORBO: Information Gain Target invalid. Wait for Information Target to be set.");
+            }
+            Eigen::VectorXd tmp;
+            _state_reference_callback->getReference(Time(0.0), tmp);
+            PRINT_INFO_ONCE("URTaskCORBO: Information gain target set at " << tmp.transpose() << ".");
+        }
+        else
+        {
+            PRINT_INFO_ONCE(
+                "URTaskCORBO: Information gain target already set. Checking if target is reached.If yes get a new exploration "
+                "target.");
+
+            // get current state
+            _state_mutex.lock();
+            Eigen::VectorXd curr_state = _save_state;
+            _state_mutex.unlock();
+            // Check if target is reached and then allow to get new target
+            if (_sm_solution_info_exploration.isApprox(curr_state, 1e-2)) // 1e-2 tolerance on L2 norm for joint angles
+            {
+                _new_info_target = true;
+            }
+        }
+    }
+
+    void URTask::occlusionTargetCallback(const geometry_msgs::PoseStamped &msg)
+    {
+        PRINT_INFO_ONCE("URTaskCORBO: Received occlusion observation target.");
+        // if (_new_occ_target)
+        if (true)
+        {
+            // Set Task point of info gain target
+            _ur_inverse_kinematic->setTaskPoint(
+                Eigen::Vector3d{msg.pose.position.x, msg.pose.position.y, msg.pose.position.z},
+                Eigen::Quaterniond{msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z});
+
+            // always validate
+            std::vector<Eigen::VectorXd> validated_target;
+            if (_ur_inverse_kinematic->getNumSolutions() > 0)
+            {
+                _setpoint_manager_occ_observation->setJointSpaceWaypoints({_ur_inverse_kinematic->getSolutions()}, {0.0});
+                _setpoint_manager_occ_observation->validate();
+            }
+            else
+            {
+                ROS_WARN("URTaskCORBO: No valid IK solution for occlusion target.");
+                return;
+            }
+
+            // measure current state
+            Eigen::VectorXd measured_state_new;
+            _state_reference->getReference(Time(0.0), measured_state_new);
+            // std::cout << "measured_state_new: " << measured_state_new.transpose() << std::endl;
+
+            _sm_objective_occ_observation->setReferenceState(measured_state_new);
+
+            if (!_setpoint_manager_occ_observation->getOptimalWaypoints(*_sm_objective_occ_observation, validated_target))
+            {
+                PRINT_INFO_ONCE("URTaskCORBO: Occlusion observation task waypoint not reachable. Using current state.");
+                // check if set point changed
+                if (!_sm_solution_occ_observation.isApprox(measured_state_new))
+                {
+                    _sm_solution_occ_observation = measured_state_new;
+
+                    TimeSeries state_ts(_state_reference_callback->getDimension());
+                    state_ts.add(0, _sm_solution_occ_observation);
+                    if (_observation_exploration)
+                    {
+                        if (_is_tracking_mode)
+                        {
+                            _state_reference_callback->setTrajectory(state_ts);
+                            _new_xref = true;
+                            _new_occ_target = false;
+                        }
+                    }
+                    else if (!_info_exploration)
+                    {
+                        _state_reference_callback->setTrajectory(state_ts);
+                        _new_xref = true;
+                        _new_occ_target = false;
+                    }
+                }
+            }
+            else if (!_sm_solution_occ_observation.isApprox(validated_target.front())) // check if set point changed
+            {
+                PRINT_INFO_ONCE("URTaskCORBO: Setpoint Changed.");
+                _sm_solution_occ_observation = validated_target.front();
+
+                TimeSeries state_ts(_state_reference_callback->getDimension());
+                state_ts.add(0, _sm_solution_occ_observation);
+                if (_observation_exploration)
+                {
+                    if (_is_tracking_mode)
+                    {
+                        _state_reference_callback->setTrajectory(state_ts);
+                        _new_xref = true;
+                        _new_occ_target = false;
+                    }
+                }
+                else if (!_info_exploration)
+                {
+                    _state_reference_callback->setTrajectory(state_ts);
+                    _new_xref = true;
+                    _new_occ_target = false;
+                }
+            }
+            else
+            {
+                PRINT_WARNING_ONCE("URTaskCORBO: Occlusion observation Target invalid. Wait for Information Target to be set.");
+            }
+
+            Eigen::VectorXd tmp;
+            _state_reference_callback->getReference(Time(0.0), tmp);
+            PRINT_INFO_ONCE("URTaskCORBO: Occlusion observation target set at " << tmp.transpose() << ".");
+        }
+        else
+        {
+            PRINT_INFO_ONCE("URTaskCORBO: Occlusion observation target already set. Checking if target is reached.If yes get a new target");
+
+            // get current state
+            _state_mutex.lock();
+            Eigen::VectorXd curr_state = _save_state;
+            _state_mutex.unlock();
+            // Check if target is reached and then allow to get new target
+            if (_sm_solution_occ_observation.isApprox(curr_state, 1e-2)) // 1e-2 tolerance on L2 norm for joint angles
+            {
+                _new_occ_target = true;
+            }
+        }
+    }
     void URTask::obstacleCallback(const mhp_robot::MsgObstacleListConstPtr &msg)
     {
         PRINT_INFO_ONCE("URTask: Received virtual dynamic obstacle pose.");
@@ -515,7 +791,7 @@ namespace mhp_planner
             if (_reference_mode == PATHPILOT)
             {
                 PRINT_ERROR(
-                    "URTaskCORBO: Reference mode PathPilot do not support non-static references. Using mode "
+                    "URTask: Reference mode PathPilot do not support non-static references. Using mode "
                     "Callback.");
                 _reference_mode = CALLBACK;
             }
@@ -545,6 +821,24 @@ namespace mhp_planner
                 _reinit = true;
                 _new_xref = false;
             }
+        }
+        else if (_reference_mode == NONE)
+        {
+            // XRef: X0
+            // URef: 0
+            // SRef: -
+
+            // Reference is measured state
+
+            TimeSeries state_ts(_state_reference_callback->getDimension());
+            TimeSeries control_ts(_control_reference_callback->getDimension());
+
+            state_ts.add(0.0, measured_state);
+            control_ts.add(0.0, Eigen::VectorXd::Zero(_control_reference_callback->getDimension()));
+            _state_reference->setTrajectory(state_ts);
+            _control_reference->setTrajectory(control_ts);
+
+            _reinit = true;
         }
         else // CALLBACK - Default
         {
@@ -661,7 +955,7 @@ namespace mhp_planner
     }
 
     bool URTask::fromParameterServer(const std::string &ns)
-    {   
+    {
         _ns = ns;
         // get node handle
         ros::NodeHandle nh;
@@ -677,10 +971,14 @@ namespace mhp_planner
             PRINT_ERROR("URTask: Could not read parameter dt.");
             return false;
         };
+        
+        nh.getParam(ns + "/info_exploration", _info_exploration);
+        nh.getParam(ns + "/occlusion_observation", _occlusion_observation);   
 
         _start_environment = false;
         _publish_prediction_marker = true;
         _publish_task_space = true;
+        
 
         // compensator
         if (!nh.getParam(ns + "/computation_delay", _computation_delay))
@@ -809,6 +1107,11 @@ namespace mhp_planner
         {
             PRINT_INFO("URTask: Reference mode set to Callback.");
             _reference_mode = CALLBACK;
+        }
+        else if (reference_mode == "None")
+        {
+            PRINT_INFO("URTask: Reference mode set to None.");
+            _reference_mode = NONE;
         }
         else
         {

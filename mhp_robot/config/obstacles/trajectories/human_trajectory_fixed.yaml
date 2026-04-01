@@ -1,0 +1,10 @@
+human_trajectories:
+  - human_id: 0
+    duration: 5.0
+    steps: 100
+    loop: false
+    return: true
+    foot1: [2.4, -0.0, -1.57]
+    foot2: [2.4, -0.0, -1.57]
+    angles1: [0.0,0.0,1.2,0.0,1.57,0.5,1.2,0.0,-1.57,0.5,0.0]
+    angles2: [0.0,0.0,1.2,0.0,1.57,0.5,1.2,0.0,-1.57,0.5,0.0]

@@ -31,6 +31,8 @@
 #include <mhp_planner/controllers/predictive_controller.h>
 #include <mhp_planner/systems/filter_interface.h>
 #include <mhp_planner/tasks/task_interface.h>
+#include <mhp_robot/robot_setpoint_manager/robot_setpoint_manager.h>
+#include <mhp_robot/robot_setpoint_manager/objectives/euclidean_setpoint_objective.h>
 #include <mhp_robot/SrvStartSimulation.h>
 #include <mhp_robot/robot_misc/planning_delay.h>
 #include <mhp_robot/robot_obstacle/obstacle_list.h>
@@ -66,13 +68,17 @@ namespace mhp_planner
       using ObstacleList = mhp_robot::robot_obstacle::ObstacleList;
       using Common = mhp_robot::robot_misc::Common;
       using URKinematic = mhp_robot::robot_kinematic::URKinematic;
+      using URInverseKinematic = mhp_robot::robot_kinematic::URInverseKinematic;
       using URUtility = mhp_robot::robot_misc::URUtility;
       using URCollision = mhp_robot::robot_collision::URCollision;
+      using RobotSetPointManager = mhp_robot::robot_set_point_manager::RobotSetPointManager;
+      using EuclideanSetpointObjective = mhp_robot::robot_set_point_manager::objectives::EuclideanSetpointObjective;
 
       enum ReferenceMode
       {
          CALLBACK,
-         PATHPILOT
+         PATHPILOT,
+         NONE
       } _reference_mode = CALLBACK;
 
       double _measured_planning_time = 0.0;
@@ -90,6 +96,14 @@ namespace mhp_planner
       bool _reinit = false;
       bool _single_shot = false;
       bool _trigger_replan = true;
+      bool _info_exploration = false;
+      bool _occlusion_observation = false;
+      bool _new_info_target = true;
+      bool _new_occ_target = true;
+      bool _use_current_state_as_reference = false;
+
+      bool _is_tracking_mode = false;
+      bool _observation_exploration = false;
 
       std::string _ns;
       
@@ -102,8 +116,16 @@ namespace mhp_planner
       DiscreteTimeReferenceTrajectory::Ptr _pose_reference, _pose_reference_callback;
       Eigen::Matrix<double, 6, 1> _initial_state_reference;
 
+      Eigen::VectorXd _sm_solution;
+      Eigen::VectorXd _sm_solution_info_exploration;
+      Eigen::VectorXd _sm_solution_occ_observation;
+      Eigen::VectorXd _save_state = Eigen::VectorXd::Zero(6);
+      std::mutex _state_mutex;
+ 
       void stateTargetCallback(const trajectory_msgs::JointTrajectoryConstPtr &msg);
       void taskSpaceTargetCallback(const trajectory_msgs::MultiDOFJointTrajectoryConstPtr &msg);
+      void informationTargetCallback(const geometry_msgs::Pose& msg);
+      void occlusionTargetCallback(const geometry_msgs::PoseStamped& msg);
       void obstacleCallback(const mhp_robot::MsgObstacleListConstPtr &msg);
 
       void processRefsAndInits(URBasePathPilotCORBO::SubReference& sub_reference,const Eigen::Ref<const Eigen::VectorXd> &measured_state, const TimeSeries &optimized_states,
@@ -119,6 +141,13 @@ namespace mhp_planner
       ObstacleList _obstacle_manager;
       URUtility::UPtr _ur_utility;
       URKinematic::UPtr _ur_kinematic;
+      URInverseKinematic::UPtr _ur_inverse_kinematic;
+      RobotSetPointManager::UPtr _setpoint_manager;
+      EuclideanSetpointObjective::UPtr _sm_objective;
+      RobotSetPointManager::UPtr _setpoint_manager_info_exploration;
+      EuclideanSetpointObjective::UPtr _sm_objective_info_exploration;
+      RobotSetPointManager::UPtr _setpoint_manager_occ_observation;
+      EuclideanSetpointObjective::UPtr _sm_objective_occ_observation;
    };
 
    FACTORY_REGISTER_TASK(URTask)

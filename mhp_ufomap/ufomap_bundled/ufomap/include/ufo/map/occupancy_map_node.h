@@ -47,142 +47,173 @@
 #include <ufo/map/code.h>
 #include <ufo/map/color.h>
 #include <ufo/map/octree_node.h>
+#include <ufo/map/prediction.h>
 
 namespace ufo::map
 {
 using Intensity = uint8_t;
 
 template <typename T>
- struct OccupancyNode {
-	T occupancy = 0;
+struct OccupancyNode
+{
+  T occupancy = 0;
 
-	CUDA_CALL OccupancyNode() {}
+  CUDA_CALL OccupancyNode()
+  {
+  }
 
-	CUDA_CALL  OccupancyNode(T occupancy) : occupancy(occupancy) {}
+  CUDA_CALL OccupancyNode(T occupancy) : occupancy(occupancy)
+  {
+  }
 
-	bool operator==(OccupancyNode const& rhs) const { return rhs.occupancy == occupancy; }
-	bool operator!=(OccupancyNode const& rhs) const { return rhs.occupancy != occupancy; }
+  bool operator==(OccupancyNode const& rhs) const
+  {
+	return rhs.occupancy == occupancy;
+  }
+  bool operator!=(OccupancyNode const& rhs) const
+  {
+	return rhs.occupancy != occupancy;
+  }
 
-	/**
-	 * @brief Write the data from this node to stream s
-	 *
-	 * @param s The stream to write the data to
-	 * @return std::ostream&
-	 */
-	std::ostream& writeData(std::ostream& s) const
-	{
-		s.write(reinterpret_cast<char const*>(&occupancy), sizeof(occupancy));
-		return s;
-	}
+  /**
+   * @brief Write the data from this node to stream s
+   *
+   * @param s The stream to write the data to
+   * @return std::ostream&
+   */
+  std::ostream& writeData(std::ostream& s) const
+  {
+	s.write(reinterpret_cast<char const*>(&occupancy), sizeof(occupancy));
+	return s;
+  }
 
-	/**
-	 * @brief Read the data for this node from stream s
-	 *
-	 * @param s The stream to read the data from
-	 * @return std::istream&
-	 */
-	std::istream& readData(std::istream& s)
-	{
-		s.read(reinterpret_cast<char*>(&occupancy), sizeof(occupancy));
-		return s;
-	}
+  /**
+   * @brief Read the data for this node from stream s
+   *
+   * @param s The stream to read the data from
+   * @return std::istream&
+   */
+  std::istream& readData(std::istream& s)
+  {
+	s.read(reinterpret_cast<char*>(&occupancy), sizeof(occupancy));
+	return s;
+  }
 };
 
- struct ColorNode {
-	Color color;
+struct ColorNode
+{
+  Color color;
+  Prediction prediction;
 
-	CUDA_CALL  ColorNode() {}
+  CUDA_CALL ColorNode()
+  {
+  }
 
-	CUDA_CALL  ColorNode(Color const& color) : color(color) {}
+  CUDA_CALL ColorNode(Color const& color, Prediction const& prediction) : color(color), prediction(prediction)
+  {
+  }
 
-	bool operator==(ColorNode const& rhs) const { return rhs.color == color; }
-	bool operator!=(ColorNode const& rhs) const { return rhs.color != color; }
+  bool operator==(ColorNode const& rhs) const
+  {
+	return rhs.color == color && rhs.prediction == prediction;
+  }
+  bool operator!=(ColorNode const& rhs) const
+  {
+	return rhs.color != color && rhs.prediction != prediction;
+  }
 
-	/**
-	 * @brief Write the data from this node to stream s
-	 *
-	 * @param s The stream to write the data to
-	 * @return std::ostream&
-	 */
-	std::ostream& writeData(std::ostream& s) const
-	{
-		s.write(reinterpret_cast<char const*>(&color), sizeof(color));
-		return s;
-	}
+  /**
+   * @brief Write the data from this node to stream s
+   *
+   * @param s The stream to write the data to
+   * @return std::ostream&
+   */
+  std::ostream& writeData(std::ostream& s) const
+  {
+	s.write(reinterpret_cast<char const*>(&color), sizeof(color));
+	s.write(reinterpret_cast<char const*>(&prediction), sizeof(prediction));
+	return s;
+  }
 
-	/**
-	 * @brief Read the data for this node from stream s
-	 *
-	 * @param s The stream to read the data from
-	 * @return std::istream&
-	 */
-	std::istream& readData(std::istream& s)
-	{
-		s.read(reinterpret_cast<char*>(&color), sizeof(color));
-		return s;
-	}
+  /**
+   * @brief Read the data for this node from stream s
+   *
+   * @param s The stream to read the data from
+   * @return std::istream&
+   */
+  std::istream& readData(std::istream& s)
+  {
+	s.read(reinterpret_cast<char*>(&color), sizeof(color));
+	s.read(reinterpret_cast<char*>(&prediction), sizeof(prediction));
+	return s;
+  }
 };
 
 template <typename T>
- struct ColorOccupancyNode : OccupancyNode<T>, ColorNode {
-	CUDA_CALL ColorOccupancyNode() {}
+struct ColorOccupancyNode : OccupancyNode<T>, ColorNode
+{
+  CUDA_CALL ColorOccupancyNode()
+  {
+  }
 
-	ColorOccupancyNode(T occupancy, Color const& color = Color())
-	    : OccupancyNode<T>(occupancy), ColorNode(color)
-	{
-	}
+  explicit ColorOccupancyNode(T occupancy, Color const& color = Color(), Prediction const& prediction = Prediction())
+	: OccupancyNode<T>(occupancy), ColorNode(color, prediction)
+  {
+  }
 
-	bool operator==(ColorOccupancyNode const& rhs) const
-	{
-		return OccupancyNode<T>::operator==(rhs) && ColorNode::operator==(rhs);
-	}
+  bool operator==(ColorOccupancyNode const& rhs) const
+  {
+	return OccupancyNode<T>::operator==(rhs) && ColorNode::operator==(rhs);
+  }
 
-	bool operator!=(ColorOccupancyNode const& rhs) const
-	{
-		return OccupancyNode<T>::operator!=(rhs) || ColorNode::operator!=(rhs);
-	}
+  bool operator!=(ColorOccupancyNode const& rhs) const
+  {
+	return OccupancyNode<T>::operator!=(rhs) || ColorNode::operator!=(rhs);
+  }
 
-	/**
-	 * @brief Write the data from this node to stream s
-	 *
-	 * @param s The stream to write the data to
-	 * @return std::ostream&
-	 */
-	std::ostream& writeData(std::ostream& s) const
-	{
-		return ColorNode::writeData(OccupancyNode<T>::writeData(s));
-	}
+  /**
+   * @brief Write the data from this node to stream s
+   *
+   * @param s The stream to write the data to
+   * @return std::ostream&
+   */
+  std::ostream& writeData(std::ostream& s) const
+  {
+	return ColorNode::writeData(OccupancyNode<T>::writeData(s));
+  }
 
-	/**
-	 * @brief Read the data for this node from stream s
-	 *
-	 * @param s The stream to read the data from
-	 * @return std::istream&
-	 */
-	std::istream& readData(std::istream& s)
-	{
-		return ColorNode::readData(OccupancyNode<T>::readData(s));
-	}
+  /**
+   * @brief Read the data for this node from stream s
+   *
+   * @param s The stream to read the data from
+   * @return std::istream&
+   */
+  std::istream& readData(std::istream& s)
+  {
+	return ColorNode::readData(OccupancyNode<T>::readData(s));
+  }
 };
 
 template <typename T>
 using OccupancyMapLeafNode = OctreeLeafNode<T>;
 
 template <typename T>
- struct OccupancyMapInnerNodeBase : OccupancyMapLeafNode<T> {
-	// Indicates whether this node or any of its children contains free space
-	bool contains_free;
-	// Indicates whether this node or any of its children contains unknown space
-	bool contains_unknown;
+struct OccupancyMapInnerNodeBase : OccupancyMapLeafNode<T>
+{
+  // Indicates whether this node or any of its children contains free space
+  bool contains_free;
+  // Indicates whether this node or any of its children contains unknown space
+  bool contains_unknown;
 };
 
 template <typename T>
 using OccupancyMapInnerNode = OctreeInnerNodeBase<OccupancyMapInnerNodeBase<T>>;
 
 template <typename T>
- struct Node {
-	OccupancyMapLeafNode<T> const* node;
-	Code code;
+struct Node
+{
+  OccupancyMapLeafNode<T> const* node;
+  Code code;
 };
 
 }  // namespace ufo::map

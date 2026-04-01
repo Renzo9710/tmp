@@ -42,6 +42,10 @@ class RobotQuadraticCostJointSpace : virtual public RobotCostFunction
     double computeStateCost(const Eigen::Ref<const Eigen::VectorXd>& x_k, const Eigen::Ref<const Eigen::VectorXd>& x_ref,
                             const Eigen::Ref<const Eigen::VectorXd>& s_ref) override;
 
+    double computeStateCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k,
+                          const Eigen::Ref<const Eigen::VectorXd>& x_ref,
+                          const Eigen::Ref<const Eigen::VectorXd>& s_ref) override;
+
     void computeStateCostGradient(const Eigen::Ref<const Eigen::VectorXd>& x_k, const Eigen::Ref<const Eigen::VectorXd>& x_ref,
                                   const Eigen::Ref<const Eigen::VectorXd>& s_ref, Eigen::Ref<Eigen::VectorXd> dx) override;
 

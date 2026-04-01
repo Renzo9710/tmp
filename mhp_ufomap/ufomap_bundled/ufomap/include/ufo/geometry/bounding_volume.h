@@ -52,6 +52,8 @@ class BoundingVolume
  public:
 	void add(BoundingVar const& bv) { bounding_volume_.push_back(bv); }
 
+	void clear() { bounding_volume_.clear(); }
+	
 	size_t size() const { return bounding_volume_.size(); }
 
 	bool empty() const { return bounding_volume_.empty(); }

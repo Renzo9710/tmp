@@ -71,45 +71,66 @@ using Point3 = ufo::math::Vector3;
 class Point3Color : public Point3
 {
  public:
-	Point3Color() {}
+  CUDA_CALL Point3Color()
+  {
+  }
 
-	Point3Color(Point3 const& point, Color const& color) : Point3(point), color_(color) {}
+  CUDA_CALL Point3Color(Point3 const& point, Color const& color) : Point3(point), color_(color)
+  {
+  }
 
-	Point3Color(double x, double y, double z, uint8_t r, uint8_t g, uint8_t b)
-	    : Point3(x, y, z), color_(r, g, b)
-	{
-	}
+  CUDA_CALL Point3Color(double x, double y, double z, uint8_t r, uint8_t g, uint8_t b)
+	: Point3(x, y, z), color_(r, g, b)
+  {
+  }
 
-	Point3Color(Point3 const& point) : Point3(point) {}
+  CUDA_CALL Point3Color(Point3 const& point) : Point3(point)
+  {
+  }
 
-	Point3Color(double x, double y, double z) : Point3(x, y, z) {}
+  CUDA_CALL Point3Color(double x, double y, double z) : Point3(x, y, z)
+  {
+  }
 
-	Point3Color(uint8_t r, uint8_t g, uint8_t b) : color_(r, g, b) {}
+  CUDA_CALL Point3Color(uint8_t r, uint8_t g, uint8_t b) : color_(r, g, b)
+  {
+  }
 
-	Point3Color(Color const& color) : color_(color) {}
+  CUDA_CALL Point3Color(Color const& color) : color_(color)
+  {
+  }
 
-	Point3Color& operator=(Point3Color const& rhs)
-	{
-		Point3::operator=(rhs);
-		color_ = rhs.color_;
-		return *this;
-	}
+  CUDA_CALL Point3Color& operator=(Point3Color const& rhs)
+  {
+	Point3::operator=(rhs);
+	color_ = rhs.color_;
+	return *this;
+  }
 
-	Color const& getColor() const { return color_; }
+  CUDA_CALL Color const& getColor() const
+  {
+	return color_;
+  }
 
-	Color& getColor() { return color_; }
+  CUDA_CALL Color& getColor()
+  {
+	return color_;
+  }
 
-	void setColor(Color const& new_color) { color_ = new_color; }
+  CUDA_CALL void setColor(Color const& new_color)
+  {
+	color_ = new_color;
+  }
 
-	void setColor(uint8_t r, uint8_t g, uint8_t b)
-	{
-		color_.r = r;
-		color_.g = g;
-		color_.b = b;
-	}
+  CUDA_CALL void setColor(uint8_t r, uint8_t g, uint8_t b)
+  {
+	color_.r = r;
+	color_.g = g;
+	color_.b = b;
+  }
 
  protected:
-	Color color_;
+  Color color_;
 };
 }  // namespace ufo::map
 

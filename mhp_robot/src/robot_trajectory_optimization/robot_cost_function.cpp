@@ -54,6 +54,11 @@ double RobotCostFunction::computeStateCost(const Eigen::Ref<const Eigen::VectorX
 {
     return 0.0;
 }
+double RobotCostFunction::computeStateCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k, const Eigen::Ref<const Eigen::VectorXd>& x_ref,
+                                           const Eigen::Ref<const Eigen::VectorXd>& s_ref)
+{
+    return 0.0;
+}
 
 double RobotCostFunction::computeControlCost(const Eigen::Ref<const Eigen::VectorXd>& u_k, const Eigen::Ref<const Eigen::VectorXd>& u_ref,
                                              const Eigen::Ref<const Eigen::VectorXd>& s_ref)

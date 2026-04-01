@@ -29,7 +29,9 @@
 #include <mhp_planner/ocp/functions/stage_functions.h>
 #include <ur10_planner/ocp/costs/ur_base_cost_function_corbo.h>
 #include <ur10_planner/ocp/potentials/ur_base_collision_potential_corbo.h>
+#include <ur10_planner/ocp/potentials/ur_base_occlusion_potential_corbo.h>
 #include <ur10_planner/ocp/gains/ur_base_information_gain_corbo.h>
+#include <ur10_planner/ocp/observation_exploration/ur_base_observation_exploration_corbo.h>
 #include <ur_utilities/ur_collision/ur_collision.h>
 #include <ur_utilities/ur_kinematic/ur_kinematic.h>
 
@@ -80,6 +82,8 @@ class URStageCost : public StageCost
     URBaseCostFunction::Ptr _cost_function;
     URBaseCollisionPotential::Ptr _collision_potential;
     URBaseInformationGain::Ptr _information_gain;
+    URBaseOcclusionPotential::Ptr _occlusion_potential;
+    URBaseObservationExploration::Ptr _observation_exploration;
     
     const ReferenceTrajectoryInterface* _x_ref = nullptr;
     const ReferenceTrajectoryInterface* _u_ref = nullptr;

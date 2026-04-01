@@ -14,17 +14,19 @@
 <arg name="pc_frame_name" value="camera_link" if="$(eval camera_type== 'intel_realsense')"/>
 <arg name="pc_frame_name" value="fixed_depth_camera" if="$(eval camera_type== 'rosbag')"/>
 
-<param name="depth_camera_frame" value="$(arg pc_frame_name)"/>
+<param name="depth_camera_frame" value="camera_3d_depth_camera_link"/>
 
 
 <arg name="num_startpoints" default="500" />
 <arg name="num_scaling_gridpoints" default="100" />
-<arg name="information_distribution_gpu" default="true" />
-<arg name="buffer_pcl" default="true" />
-<arg name="buffer_size" default="10" />
 
-<arg name="nbv_goals" value="false" />
-<arg name="publish_gain" value="true" />
+<arg name="information_distribution" default="false" />
+<arg name="information_distribution_gpu" default="true"/>
+<arg name="occlusion_distribution" default="true"/>
+<arg name="occlusion_distribution_gpu" default="true"/>
+
+<arg name="buffer_pcl" default="false" />
+<arg name="buffer_size" default="4" />
 
 <!-- ur10 visualization launch node -->
 
@@ -82,31 +84,45 @@
 
 <!-- UFOMap node; Note that the frame_id has to be changed in the cfg -->
   <include file="$(find ufomap_bundled)/launch/server.launch">
-    <arg name="resolution" value="0.01" />
-    <arg name="num_workers" value="8" />
-    <arg name="cloud_in" value="/filtered_cloud" />
-    <arg name="information_distribution" value="true" />
-    <arg name="information_distribution_gpu" value="$(arg information_distribution_gpu)" />
-    <arg name="buffer_pcl" value="$(arg buffer_pcl)" />
-    <arg name="buffer_size" value="$(arg buffer_size)" />
+      <arg name="resolution" value="0.01" />
+      <arg name="num_workers" value="8" />
+      <arg name="cloud_in" value="/filtered_cloud" />
+      <arg name="information_distribution" value="$(arg information_distribution)" />
+      <arg name="information_distribution_gpu" value="$(arg information_distribution_gpu)" />
+      <arg name="occlusion_distribution" value="$(arg occlusion_distribution)" />
+      <arg name="occlusion_distribution_gpu" value="$(arg occlusion_distribution_gpu)" />
+      <arg name="buffer_pcl" value="$(arg buffer_pcl)" />
+      <arg name="buffer_size" value="$(arg buffer_size)" />
 
-    <arg name="num_startpoints" value="$(arg num_startpoints)" />
-    <arg name="num_scaling_gridpoints" value="$(arg num_scaling_gridpoints)" />
+      <arg name="num_startpoints" value="$(arg num_startpoints)" />
+      <arg name="num_scaling_gridpoints" value="$(arg num_scaling_gridpoints)" />
   </include>
 
-
-<group if="$(arg nbv_goals)">
-  <node pkg="ur_utilities" type="ur_nbv" name="ur_nbv" output="screen"/>
-</group>
-
-<group if="$(arg publish_gain)">
-  <node pkg="ur_utilities" type="ur_information_gain" name="ur_information_gain" output="screen"/>
-</group>
-
 <include file="$(find ur_launch)/launch/ur10_simulation.launch">
-  <arg name="workspace_monitor_mode" value="tf" />
+  <arg name="workspace_monitor_mode" value="automatic" />
   <arg name="camera_frame" value="true" />
 </include>
+
+<!-- Nodes you need to start for Mediapipe tracking. Please check the Installation guides first and note that it's only running with an extra camera! -->
+    <?ignore
+    <!-- Start Mediapipe for hand tracking subcribing an image from (arg mediapipe_prefix)/rgb/image_rect_color and estimating hand landmarkers -->
+    <!-- Launch the mediapipe human pose estimation node -->
+    <node pkg="human_state_estimation_mediapipe" type="mediapipe_human_hand_estimation_ros.py" name="mediapipe_human_hand_estimation_ros" output="screen" ns="$(arg mediapipe_prefix)"/>
+
+    <!-- Start the depth extraction node by subscirbing to depth image in rgb frame from topic camera_prefix/depth_to_rgb/hw_registered/image_rect (check Azure Kinect ROS drivers) -->
+    <!-- Launch the 3d human pose estimation node -->
+    <node pkg="human_state_estimation_mediapipe" type="human_state_estimation_mp_depth_node" name="human_state_estimation_mp_depth_node" output="screen" ns="$(arg mediapipe_prefix)">
+        <param name="camera_prefix" value="$(arg camera_prefix)" />
+    </node>
+
+    <!--  Start the tracking node that calculates the center of mass / tracking target for the approach -->
+    <!-- Launche the hand tracking node  -->
+    <node pkg="human_state_estimation_mediapipe" type="hand_tracking_node" name="hand_tracking_node" output="screen" ns="$(arg mediapipe_prefix)">
+        <remap from="target" to="/target"/>
+        <remap from="com" to="/hand_com_mp"/>
+    </node>
+    
+    ?>
 
 </launch>
 

@@ -47,12 +47,22 @@ namespace mhp_planner
         {
             if (_information_gain)
             {
-                cost << _cost_function->computeStateCost(x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
-                            _collision_potential->computePotentials(k, x_k) + _information_gain->computeGain(k, x_k);
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                            _collision_potential->computePotentials(k, x_k) + _information_gain->computeCost(k, x_k);
+            }
+            else if (_occlusion_potential)
+            {
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                            _collision_potential->computePotentials(k, x_k) + _occlusion_potential->computePotentials(k, x_k);
+            }
+            else if (_observation_exploration)
+            {
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                            _collision_potential->computePotentials(k, x_k) + _observation_exploration->computePotentials(k, x_k);
             }
             else
             {
-                cost << _cost_function->computeStateCost(x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
                             _collision_potential->computePotentials(k, x_k);
             }
         }
@@ -60,12 +70,22 @@ namespace mhp_planner
         {
             if (_information_gain)
             {
-                cost << _cost_function->computeStateCost(x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
-                            _information_gain->computeGain(k, x_k);
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                            _information_gain->computeCost(k, x_k);
+            }
+            else if (_occlusion_potential)
+            {                   
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                            _occlusion_potential->computePotentials(k, x_k);
+            }
+            else if (_observation_exploration)
+            {
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k)) +
+                            _observation_exploration->computePotentials(k, x_k);
             }
             else
             {
-                cost << _cost_function->computeStateCost(x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k));
+                cost << _cost_function->computeStateCost(k, x_k, _x_ref->getReferenceCached(k), _s_ref->getReferenceCached(k));
             }
         }
     }
@@ -116,19 +136,36 @@ namespace mhp_planner
             URStagePreprocessor::Ptr preprocessor = std::dynamic_pointer_cast<URStagePreprocessor>(stage_preprocessor);
             _collision_potential->initialize(preprocessor ? preprocessor->getPreprocessor() : nullptr, std::make_unique<URCollision>());
         }
+     
         if (_information_gain && !_information_gain->isInitialized())
         {
             _information_gain->initialize(std::make_unique<URKinematic>());
         }
 
-        if (!single_dt || (int)dts.size() > 1)
+        if (_occlusion_potential && !_occlusion_potential->isInitialized())
         {
-            PRINT_WARNING_NAMED("Multiple dt currently not supported! Using first dt.");
+            _occlusion_potential->initialize(std::make_unique<URKinematic>());
         }
+
+        if (_observation_exploration && !_observation_exploration->isInitialized())
+        {
+            _observation_exploration->initialize(std::make_unique<URKinematic>());
+        }
+
         if (_collision_potential)
             _collision_potential->update(dts[0]);
         if (_information_gain)
             _information_gain->update(dts[0]);
+        if (_occlusion_potential)
+            _occlusion_potential->update(dts[0]);
+        if (_observation_exploration)
+            _observation_exploration->update(dts[0]);
+
+        if (!single_dt || (int)dts.size() > 1)
+        {
+            PRINT_WARNING_NAMED("Multiple dt currently not supported! Using first dt.");
+        }
+
         return false;
     }
 
@@ -263,45 +300,120 @@ namespace mhp_planner
             _collision_potential = {};
         }
 
-        std::string information_gain_type;
-        nh.getParam(ns + "/information_gain/information_gain_type", information_gain_type);
-        if (information_gain_type == "None")
+        std::string secondary_costs_type;
+        nh.getParam(ns + "/secondary_costs/secondary_costs_type", secondary_costs_type);
+        if (secondary_costs_type == "URInformationGain")
         {
-            _information_gain = {};
-        }
-        else if (information_gain_type == "URInformationGainSimple")
-        {
-            _information_gain = Factory<URBaseInformationGain>::instance().create(information_gain_type);
-            // import parameters
-            if (_information_gain)
+            std::string information_gain_type;
+            nh.getParam(ns + "/secondary_costs/information_gain/information_gain_type", information_gain_type);
+            if (information_gain_type == "None")
             {
-                if (!_information_gain->fromParameterServer(ns + "/information_gain"))
+                _information_gain = {};
+            }
+            else if (information_gain_type == "URInformationGainSimple")
+            {
+                _information_gain = Factory<URBaseInformationGain>::instance().create(information_gain_type);
+                // import parameters
+                if (_information_gain)
+                {
+                    if (!_information_gain->fromParameterServer(ns + "/secondary_costs/information_gain"))
+                        return false;
+                }
+                else
+                {
+                    ROS_ERROR("URStageCosts: unknown information gain specified.");
                     return false;
+                }
+            }
+            else if (information_gain_type == "URInformationGainTimeDecrease")
+            {
+                _information_gain = Factory<URBaseInformationGain>::instance().create(information_gain_type);
+                // import parameters
+                if (_information_gain)
+                {
+                    if (!_information_gain->fromParameterServer(ns + "/secondary_costs/information_gain"))
+                        return false;
+                }
+                else
+                {
+                    ROS_ERROR("URStageCosts: unknown information gain specified.");
+                    return false;
+                }
+            }
+            else if (information_gain_type == "URInformationGainPotential")
+            {
+                _information_gain = Factory<URBaseInformationGain>::instance().create(information_gain_type);
+                // import parameters
+                if (_information_gain)
+                {
+                    if (!_information_gain->fromParameterServer(ns + "/secondary_costs/information_gain"))
+                        return false;
+                }
+                else
+                {
+                    ROS_ERROR("URStageCosts: unknown information gain specified.");
+                    return false;
+                }
             }
             else
             {
-                ROS_ERROR("URStageCosts: unknown information gain specified.");
-                return false;
+                _information_gain = {};
             }
         }
-        else if (information_gain_type == "URInformationGainTimeDecrease")
-        {
-            _information_gain = Factory<URBaseInformationGain>::instance().create(information_gain_type);
-            // import parameters
-            if (_information_gain)
+        else if (secondary_costs_type == "UROcclusionPotential")
+        {   
+            std::cout<<"Secondary cost type: UROcclusionPotential"<<std::endl;
+            std::string occlusion_potential_type;
+            nh.getParam(ns + "/secondary_costs/occlusion_potential/occlusion_potential_type", occlusion_potential_type);
+            if (occlusion_potential_type == "None")
             {
-                if (!_information_gain->fromParameterServer(ns + "/information_gain"))
-                    return false;
+                _occlusion_potential = {};
             }
-            else
+            else if (occlusion_potential_type == "UROcclusionPotentialDistance")
             {
-                ROS_ERROR("URStageCosts: unknown information gain specified.");
-                return false;
+                _occlusion_potential = Factory<URBaseOcclusionPotential>::instance().create(occlusion_potential_type);
+                // import parameters
+                if (_occlusion_potential)
+                {
+                    if (!_occlusion_potential->fromParameterServer(ns + "/secondary_costs/occlusion_potential"))
+                        return false;
+                }
+                else
+                {
+                    ROS_ERROR("URStageCosts: unknown occlusion potential specified.");
+                    return false;
+                }
+            }
+        }
+        else if (secondary_costs_type == "URObservationExploration")
+        {
+            std::string observation_exploration_type;
+            nh.getParam(ns + "/secondary_costs/observation_exploration/observation_exploration_type", observation_exploration_type);
+            if (observation_exploration_type == "None")
+            {
+                _observation_exploration = {};
+            }
+            else if (observation_exploration_type == "URObservationExplorationDistance")
+            {
+                _observation_exploration = Factory<URBaseObservationExploration>::instance().create(observation_exploration_type);
+                // import parameters
+                if (_observation_exploration)
+                {
+                    if (!_observation_exploration->fromParameterServer(ns + "/secondary_costs/observation_exploration"))
+                        return false;
+                }
+                else
+                {
+                    ROS_ERROR("URStageCosts: unknown observation exploration specified.");
+                    return false;
+                }
             }
         }
         else
         {
             _information_gain = {};
+            _occlusion_potential = {};
+            _observation_exploration = {};
         }
 
         return true;

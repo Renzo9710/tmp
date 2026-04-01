@@ -60,7 +60,7 @@ namespace mhp_robot
             RobotInformationGain &operator=(RobotInformationGain &&) = delete;
             virtual ~RobotInformationGain() {}
 
-            virtual double computeGain(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k) = 0;
+            virtual double computeCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k) = 0;
 
             virtual void computeGradient(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k, Eigen::Ref<Eigen::VectorXd> dx);
 
@@ -84,6 +84,12 @@ namespace mhp_robot
 
             ros::Subscriber _information_gain_sub;
             pcl::PointCloud<pcl::PointXYZI> _information_pcl;
+            int _pcl_num = 0;
+            bool _new_pcl;  // flag to check if new pcl is available
+
+              pcl::PointCloud<pcl::PointXYZI> _information_pcl_cb;
+            int _pcl_num_cb = 0;
+            bool _new_pcl_cb;  // flag to check if new pcl is available
 
             Eigen::Matrix4d _tf_cam_to_ee_link = Eigen::Matrix4d::Identity();
             RobotKinematic::UPtr _robot_kinematic;
@@ -113,17 +119,15 @@ namespace mhp_robot
             std::string _camera_frame = "depth_camera_link";
 
             // Buffer size for time decrease
-            int _buffer_size = 10; // Currently fixed, adapt if buffer changes size
+            int _buffer_size = 10;   // Currently fixed, adapt if buffer changes size
             bool _buffer_pcl = true;
 
-            // Time decrease adaptions
-            int _pcl_num = 0;
-            bool _new_pcl; // flag to check if new pcl is available
 
             // PCL mutexes
             std::mutex _pcl_mutex;
-            std::mutex _pcl_num_mutex;
-            std::mutex _new_pcl_mutex;
+
+            std::unordered_map<int, double> _costs_for_k;  // stores costs for each k
+
         };
 
     } // namespace robot_trajectory_optimization

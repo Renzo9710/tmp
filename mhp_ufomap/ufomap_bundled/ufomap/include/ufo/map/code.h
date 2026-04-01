@@ -83,15 +83,15 @@ namespace ufo::map
 class Code
 {
  public:
-	CUDA_CALL Code() : code_(0), depth_(0) {}
+    CUDA_CALL Code() : code_(0), depth_(0) {}
 
-	CUDA_CALL Code(CodeType code, DepthType depth = 0) : code_(code), depth_(depth) {}
+    CUDA_CALL Code(CodeType code, DepthType depth = 0) : code_(code), depth_(depth) {}
 
-	CUDA_CALL Code(Key const& key) : code_(toCode(key)), depth_(key.getDepth()) {}
+    CUDA_CALL Code(Key const& key) : code_(toCode(key)), depth_(key.getDepth()) {}
 
-	CUDA_CALL Code(Code const& other) : code_(other.code_), depth_(other.depth_) {}
+    CUDA_CALL Code(Code const& other) : code_(other.code_), depth_(other.depth_) {}
 
-	CUDA_CALL Code& operator=(Code const& rhs)
+    CUDA_CALL Code& operator=(Code const& rhs)
 	{
 		code_ = rhs.code_;
 		depth_ = rhs.depth_;

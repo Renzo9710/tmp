@@ -51,6 +51,10 @@ class RobotCostFunction
 
     virtual double computeStateCost(const Eigen::Ref<const Eigen::VectorXd>& x_k, const Eigen::Ref<const Eigen::VectorXd>& x_ref,
                                     const Eigen::Ref<const Eigen::VectorXd>& s_ref);
+    
+    virtual double computeStateCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k,
+                                  const Eigen::Ref<const Eigen::VectorXd>& x_ref,
+                                  const Eigen::Ref<const Eigen::VectorXd>& s_ref);
 
     virtual double computeControlCost(const Eigen::Ref<const Eigen::VectorXd>& u_k, const Eigen::Ref<const Eigen::VectorXd>& u_ref,
                                       const Eigen::Ref<const Eigen::VectorXd>& s_ref);
@@ -126,6 +130,9 @@ class RobotCostFunction
     // Variables for Multistage Planner
     int _planner_id       = 0;
     bool _ms_planner_mode = false;
+
+    std::unordered_map<int, double> _costs_for_k;
+
 };
 
 }  // namespace robot_trajectory_optimization

@@ -40,6 +40,7 @@
 // UR
 #include <mhp_robot/robot_setpoint_manager/objectives/objectives.h>
 #include <mhp_robot/robot_setpoint_manager/robot_setpoint_manager.h>
+#include <mhp_robot/MsgInfoPCLS.h>
 #include <ur_utilities/ur_collision/ur_collision.h>
 #include <ur_utilities/ur_kinematic/ur_inverse_kinematic.h>
 #include <ur_utilities/ur_kinematic/ur_kinematic.h>
@@ -51,8 +52,10 @@ Eigen::VectorXd joint_states_eigen(6);
 Eigen::Matrix4d tf_cam_to_ee_link = Eigen::Matrix4d::Identity();
 Eigen::Matrix4d tf_world_to_fixed = Eigen::Matrix4d::Identity();
 
-void informationGainCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) { pcl::fromROSMsg(*msg, information_pcl); }
-
+void informationGainCallback(const mhp_robot::MsgInfoPCLS::ConstPtr& msg)
+{
+  pcl::fromROSMsg(msg->pcls[msg->pcls.size() - 1], information_pcl);
+}
 void jointStateCallback(const sensor_msgs::JointStateConstPtr& msg)
 {
     if (first_joint_state)

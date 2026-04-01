@@ -409,6 +409,8 @@ int main(int argc, char **argv)
     /**************************************************************************************************/
     std::string mode = "manual";
     n.getParam("workspace_monitor_mode", mode);
+    std::cout<< "Workspace monitor mode: "<< mode<< std::endl;
+
 
     std::string prediction_mode = "None";
     n.getParam("/human_motion_extrapolation/prediction_mode", prediction_mode);
@@ -544,7 +546,7 @@ int main(int argc, char **argv)
         "StateExtrapolation", extrapolationStepLength, extrapolationHorizonSteps, extrapolation_steps, constant_velocity_model);
     MotionClassificationProcess::UPtr motion_classification_ptr =
         std::make_unique<MotionClassificationProcess>("MotionClassification", 0.2, std::numeric_limits<double>::max());
-    WorkspaceFilterProcess::UPtr workspace_filter_ptr = std::make_unique<WorkspaceFilterProcess>("WorkspaceDistanceFilter", 2);
+    WorkspaceFilterProcess::UPtr workspace_filter_ptr = std::make_unique<WorkspaceFilterProcess>("WorkspaceDistanceFilter", 2.5);
     HumanMotionPredictionProcess::UPtr human_prediction_ptr = std::make_unique<HumanMotionPredictionProcess>("HumanMotionPrediction");
     ForecastUncertaintyProcess::UPtr forecast_uncertainty_ptr =
         std::make_unique<ForecastUncertaintyProcess>("ForecastUncertainty", rate, extrapolationStepLength, extrapolationHorizonSteps, gmm_samples,
@@ -561,18 +563,18 @@ int main(int argc, char **argv)
     // State estimators Task Space
     // KalmanStateEstimatorTaskSpace::UPtr kalman1_ts_ptr = std::make_unique<KalmanStateEstimatorTaskSpace>(1);
     // KalmanStateEstimatorTaskSpace::UPtr kalman2_ts_ptr   = std::make_unique<KalmanStateEstimatorTaskSpace>(2);
-    // PolynomStateEstimatorTaskSpace::UPtr polynom1_ts_ptr = std::make_unique<PolynomStateEstimatorTaskSpace>(1, 3, 7);  // for obstacle with id 1
+    PolynomStateEstimatorTaskSpace::UPtr polynom1_ts_ptr = std::make_unique<PolynomStateEstimatorTaskSpace>(6, 3, 7);  // for obstacle with id 1
     // PolynomStateEstimatorTaskSpace::UPtr polynom2_ts_ptr = std::make_unique<PolynomStateEstimatorTaskSpace>(2, 3, 7);  // for obstacle with id 2
 
     // Configure state estimators
     // configureKalmanFilterTaskSpace(*kalman1_ts_ptr, rate);
     // configureKalmanFilter(*kalman2_ts_ptr, rate);
-    // configurePolynomFilterTaskSpace(*polynom1_ts_ptr, rate);
+    configurePolynomFilterTaskSpace(*polynom1_ts_ptr, rate);
     // configurePolynomFilterTaskSpace(*polynom2_ts_ptr, rate);
 
     // state_estimators_task_space.insert(std::pair<int, BaseStateEstimatorTaskSpace::UPtr>(kalman1_ts_ptr->_id, std::move(kalman1_ts_ptr)));
     // state_estimators_task_space.insert(std::pair<int, BaseStateEstimatorTaskSpace::UPtr>(kalman2_ts_ptr->_id, std::move(kalman2_ts_ptr)));
-    // state_estimators_task_space.insert(std::pair<int, BaseStateEstimatorTaskSpace::UPtr>(polynom1_ts_ptr->_id, std::move(polynom1_ts_ptr)));
+    state_estimators_task_space.insert(std::pair<int, BaseStateEstimatorTaskSpace::UPtr>(polynom1_ts_ptr->_id, std::move(polynom1_ts_ptr)));
     // state_estimators_task_space.insert(std::pair<int, BaseStateEstimatorTaskSpace::UPtr>(polynom2_ts_ptr->_id, std::move(polynom2_ts_ptr)));
 
     /***************************************************************************************************

@@ -60,8 +60,6 @@ void URInformationGain::publish()
     {
         double factor = 1;
         double gain = 0;
-        // std::cout << "Information pcl size: " << _information_pcl.size() << std::endl;
-        // std::cout << "Joint states size: " << _joint_states.size() << std::endl;
         if (_information_pcl.size() > 0 && _joint_states.size() > 0) // be sure we already received a point cloud
         {
             // get the transformation from depth camera to world for joint configuration x_k

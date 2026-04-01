@@ -32,7 +32,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -203,7 +203,7 @@ Visualization Manager:
       Marker Topic: /ur_mhp_planner/terminal_center
       Name: Intermediate Reference
       Namespaces:
-        Sub Reference: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/TF
@@ -314,13 +314,22 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /robot_workspace_monitor/human_marker
       Name: Human Marker
       Namespaces:
-        {}
+        Head (2): true
+        Hip (0): true
+        LFArm (4): true
+        LHand (5): true
+        LUArm (3): true
+        Leg (9): true
+        Neck (1): true
+        RFArm (7): true
+        RHand (8): true
+        RUArm (6): true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /robot_workspace_monitor/predicted_human_marker
@@ -343,7 +352,7 @@ Visualization Manager:
       Marker Topic: /robot_workspace_monitor/dynamic_obstacle_marker
       Name: Dynamic Obstacle Marker
       Namespaces:
-        {}
+        Group 3: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -378,10 +387,10 @@ Visualization Manager:
     - Class: UFOMap
       Enabled: true
       Information:
-        "# Inner Nodes": 15.457
-        "# Leaf Nodes": 32.296
+        "# Inner Nodes": 2.353
+        "# Leaf Nodes": 0
         Resolution: 1 cm
-        Size: 614,59 KiB
+        Size: 735,31 KiB
       Min. Depth: 0
       Name: UFOMap
       Occupancy Thresholds:
@@ -605,7 +614,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.445860862731934
+      Distance: 6.540405750274658
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -613,17 +622,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.5822199583053589
-        Y: 0.9695761203765869
-        Z: -0.38445502519607544
+        X: 1.6118500232696533
+        Y: 0.5503023266792297
+        Z: 0.023624904453754425
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6064935922622681
+      Pitch: 0.6114935874938965
       Target Frame: <Fixed Frame>
-      Yaw: 5.460383415222168
+      Yaw: 4.065385818481445
     Saved: ~
 Window Geometry:
   Displays:
@@ -642,4 +651,4 @@ Window Geometry:
     collapsed: true
   Width: 1920
   X: 1920
-  Y: 458
+  Y: 450

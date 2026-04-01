@@ -64,12 +64,17 @@ src/ocp/ur_final_state_constraint_joint_space_corbo.cpp
 
 src/ocp/potentials/ur_collision_potential_mohri_corbo.cpp
 
+src/ocp/potentials/ur_occlusion_potential_distance_corbo.cpp
+
+src/ocp/observation_exploration/ur_observation_exploration_distance_corbo.cpp
+
 src/ocp/ur_inequality_constraint_corbo.cpp
 src/ocp/constraints/ur_acceleration_constraint_corbo.cpp
 src/ocp/constraints/ur_collision_constraint_corbo.cpp
 
 src/ocp/gains/ur_information_gain_simple_corbo.cpp
 src/ocp/gains/ur_information_gain_time_decrease_corbo.cpp
+src/ocp/gains/ur_information_gain_potential_corbo.cpp
 
 src/ocp/ur_stage_preprocessor_corbo.cpp
 )

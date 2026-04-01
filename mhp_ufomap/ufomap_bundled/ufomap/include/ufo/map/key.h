@@ -40,6 +40,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 #ifndef UFO_MAP_KEY_H
 #define UFO_MAP_KEY_H
 
@@ -173,7 +174,7 @@ class Key
 	struct Hash {
 		std::size_t operator()(Key const& key) const
 		{
-#if defined(__BMI2__)  // TODO: Is correct?
+#if defined(__BMI2__)  // TODO(Anonymous): Is correct?
 			return _pdep_u64(static_cast<CodeType>(key[0]), 0x9249249249249249) |
 			       _pdep_u64(static_cast<CodeType>(key[1]), 0x2492492492492492) |
 			       _pdep_u64(static_cast<CodeType>(key[2]), 0x4924924924924924);
@@ -186,7 +187,7 @@ class Key
  private:
 	CUDA_CALL static uint64_t splitBy3(KeyType a)
 	{
-#if defined(__BMI2__)  // TODO: Is correct?
+#if defined(__BMI2__)  // TODO(Anonymous): Is correct?
 		return _pdep_u64(static_cast<uint64_t>(a), 0x9249249249249249);
 #else
 		uint64_t code = static_cast<uint64_t>(a) & 0x1fffff;

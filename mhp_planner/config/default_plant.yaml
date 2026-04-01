@@ -25,7 +25,7 @@ plant:
   plant_type: URRobot
   real_robot: false
   reset_on_start: true # Only valid for simulation
-  start_state: [-1.0, -0.3, 0.0, 0.0, 0.0, 0.0]
+  start_state: [0.0, 0.0, 0.0, 0.0, 1.57, 0.0]
   control_mode:
     control_mode_type: OPEN_LOOP #OPEN_LOOP or CLOSED_LOOP
     # CLOSED_LOOP mode adds a P controller to the plant for tracking the desired mhp commands

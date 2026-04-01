@@ -24,33 +24,12 @@
 # *********************************************************************/
 
 dynamic_obstacles:
-  - id: 1
-    group_id: 1
-    name: Cylinder
-    length_x: 0.5
-    radius: 0.1
-    translation: [2.0, 1.0, 0.9]
-    rotation: [0.0, -1.57, 0.0]
-  - id: 2
-    group_id: 2
-    name: Sphere
-    length_x: 0.0
-    radius: 0.1
-    translation: [2.0, -1.0, 0.9]
-    rotation: [0.0, 0.0, 0.0]
-  - id: 3
+  - id: 6
     group_id: 3
     name: Box
-    length_x: 0.2
-    length_y: 0.1
+    length_x: 1.5
+    length_y: 0.5
     radius: 0.05
-    translation: [1.8, 0.0, 0.9]
+    translation: [0.0, 0.0, 0.0]
     rotation: [0.0, 0.0, 0.0]
-  - id: 4
-    group_id: 4
-    name: EBox
-    length_x: 0.2
-    length_y: 0.1
-    extruded: true
-    translation: [1.0, -1.0, 0.9]
-    rotation: [0.0, 0.0, 0.0]
+

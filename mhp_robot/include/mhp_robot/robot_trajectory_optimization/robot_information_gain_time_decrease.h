@@ -40,7 +40,7 @@ namespace mhp_robot
             using Ptr = std::shared_ptr<RobotInformationGainTimeDecrease>;
             using UPtr = std::unique_ptr<RobotInformationGainTimeDecrease>;
 
-            double computeGain(int k, const Eigen::Ref<const Eigen::VectorXd> &x_k) override;
+            double computeCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k) override;
             void inverseDistanceWeigthing(const Eigen::Ref<const Eigen::Vector3d> &point, double &gain);
 
         private:

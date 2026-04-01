@@ -47,8 +47,24 @@ class EuclideanSetpointObjective : public BaseSetpointObjective
 
     double calculateObjective(const Eigen::Ref<const Eigen::VectorXd>& current, const Eigen::Ref<const Eigen::VectorXd>& next) const override;
 
+    bool setUseOnlyFirstNDimensions(int n)
+    {
+      if (n < 1 || n > _ref.size())
+      {
+         return false;
+      }
+      _use_only_first_n_dimensions = n;
+      return true;
+    }
+    int getUseOnlyFirstNDimensions() const
+    {
+      return _use_only_first_n_dimensions;
+    };
+
  private:
     Eigen::VectorXd _ref;
+    int _use_only_first_n_dimensions;
+
 };
 
 }  // namespace objectives

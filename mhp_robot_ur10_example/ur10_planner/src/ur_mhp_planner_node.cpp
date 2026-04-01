@@ -40,10 +40,18 @@
 
 #include <ur10_planner/ocp/constraints/ur_acceleration_constraint_corbo.h>
 #include <ur10_planner/ocp/constraints/ur_collision_constraint_corbo.h>
+
 #include <ur10_planner/ocp/costs/ur_quadratic_cost_joint_space_corbo.h>
+
 #include <ur10_planner/ocp/potentials/ur_collision_potential_mohri_corbo.h>
+#include <ur10_planner/ocp/potentials/ur_occlusion_potential_distance_corbo.h>
+
+#include <ur10_planner/ocp/gains/ur_information_gain_potential_corbo.h>
 #include <ur10_planner/ocp/gains/ur_information_gain_simple_corbo.h>
 #include <ur10_planner/ocp/gains/ur_information_gain_time_decrease_corbo.h>
+
+#include <ur10_planner/ocp/observation_exploration/ur_observation_exploration_distance_corbo.h>
+
 #include <ur10_planner/ocp/ur_final_stage_cost_corbo.h>
 #include <ur10_planner/ocp/ur_final_state_constraint_joint_space_corbo.h>
 #include <ur10_planner/ocp/ur_inequality_constraint_corbo.h>

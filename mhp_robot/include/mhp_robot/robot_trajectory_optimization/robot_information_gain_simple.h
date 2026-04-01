@@ -38,8 +38,8 @@ class RobotInformationGainSimple : virtual public RobotInformationGain
     using Ptr  = std::shared_ptr<RobotInformationGainSimple>;
     using UPtr = std::unique_ptr<RobotInformationGainSimple>;
 
-    double computeGain(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k) override;
-    void inverseDistanceWeigthing( const Eigen::Ref<const Eigen::Vector3d>& point, double& gain);
+    double computeCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k) override;
+    void inverseDistanceWeigthing(const Eigen::Ref<const Eigen::Vector3d>& point, double& gain);
 
 private:
     bool _first_pcl = true;

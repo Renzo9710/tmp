@@ -52,6 +52,20 @@
 #include <type_traits>
 #include <vector>
 
+
+// CUDA
+// CUDA
+#ifdef __CUDACC__
+#ifndef CUDA_CALL
+#define CUDA_CALL __host__ __device__
+#endif
+#else
+#ifndef CUDA_CALL
+#define CUDA_CALL
+#endif
+#endif
+#include <cuda_runtime.h>
+
 namespace ufo::map
 {
 /**
@@ -64,7 +78,7 @@ template <typename T, typename = std::enable_if_t<std::is_base_of_v<Point3, T>>>
 class PointCloudT
 {
  public:
-	PointCloudT() {}
+	CUDA_CALL PointCloudT() {}
 
 	PointCloudT(const PointCloudT& other)
 	{
@@ -130,7 +144,7 @@ class PointCloudT
 	 *
 	 * @return size_t The number of points in the point cloud
 	 */
-	size_t size() const { return cloud_.size(); }
+	CUDA_CALL size_t size() const { return cloud_.size(); }
 
 	/**
 	 * @brief Adds a point to the point cloud
@@ -270,7 +284,6 @@ class PointCloudT
 	 */
 	typename std::vector<T>::const_reverse_iterator crend() const { return cloud_.rend(); }
 
- private:
 	std::vector<T> cloud_;  // The point cloud
 };
 

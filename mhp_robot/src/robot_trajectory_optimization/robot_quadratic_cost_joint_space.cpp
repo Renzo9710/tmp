@@ -41,6 +41,42 @@ double RobotQuadraticCostJointSpace::computeStateCost(const Eigen::Ref<const Eig
     return cost;
 }
 
+
+double RobotQuadraticCostJointSpace::computeStateCost(int k, const Eigen::Ref<const Eigen::VectorXd>& x_k,
+                                                      const Eigen::Ref<const Eigen::VectorXd>& x_ref,
+                                                      const Eigen::Ref<const Eigen::VectorXd>& s_ref)
+{
+  if (!_evaluate_states)
+  {
+    auto it = _costs_for_k.find(k);
+    if (it != _costs_for_k.end())
+    {
+      it->second = 0.0;
+    }
+    else
+    {
+      _costs_for_k.insert(std::make_pair(k, 0.0));
+    }
+    return 0.0;
+  }
+
+  double cost = 0.0;
+  Eigen::VectorXd xd = x_k - x_ref;
+
+  cost = xd.transpose() * _Q_diag * xd;
+
+  auto it = _costs_for_k.find(k);
+  if (it != _costs_for_k.end())
+  {
+    it->second = cost;
+  }
+  else
+  {
+    _costs_for_k.insert(std::make_pair(k, cost));
+  }
+  return cost;
+}
+
 void RobotQuadraticCostJointSpace::computeStateCostGradient(const Eigen::Ref<const Eigen::VectorXd>& x_k,
                                                             const Eigen::Ref<const Eigen::VectorXd>& x_ref,
                                                             const Eigen::Ref<const Eigen::VectorXd>& s_ref, Eigen::Ref<Eigen::VectorXd> dx)
@@ -55,7 +91,9 @@ void RobotQuadraticCostJointSpace::computeStateCostHessian(const Eigen::Ref<cons
     dxdx = 2 * _Q_diag;
 }
 
-int RobotQuadraticCostJointSpace::getStateCostDimension() const { return _evaluate_states ? 1 : 0; }
+int RobotQuadraticCostJointSpace::getStateCostDimension() const {   return 1;  // This cost function is scalar-valued --> even if we don't evaluate states, it still has a dimension, else
+             // the process is not planning at all
+             }
 
 void RobotQuadraticCostJointSpace::setQ(const Eigen::DiagonalMatrix<double, Eigen::Dynamic>& Q) { _Q_diag = Q; }
 

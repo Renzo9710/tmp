@@ -60,42 +60,52 @@
 namespace ufo::map
 {
 using ColorType = uint8_t;
-
 /**
  * @brief RGB color
  *
  */
-struct Color {
-	ColorType r;
-	ColorType g;
-	ColorType b;
+struct Color
+{
+  ColorType r;
+  ColorType g;
+  ColorType b;
 
-	CUDA_CALL Color() : r(0), g(0), b(0) {}
+  CUDA_CALL Color() : r(0), g(0), b(0)
+  {
+  }
 
-	Color(ColorType r, ColorType g, ColorType b) : r(r), g(g), b(b) {}
+  CUDA_CALL Color(ColorType r, ColorType g, ColorType b) : r(r), g(g), b(b)
+  {
+  }
 
-	CUDA_CALL  Color(Color const& other) : r(other.r), g(other.g), b(other.b) {}
+  CUDA_CALL Color(Color const& other) : r(other.r), g(other.g), b(other.b)
+  {
+  }
 
-	CUDA_CALL Color& operator=(Color const& rhs)
-	{
-		r = rhs.r;
-		g = rhs.g;
-		b = rhs.b;
-		return *this;
-	}
+  CUDA_CALL Color& operator=(Color const& rhs)
+  {
+	r = rhs.r;
+	g = rhs.g;
+	b = rhs.b;
+	return *this;
+  }
 
-	bool operator==(Color const& other) const
-	{
-		return other.r == r && other.g == g && other.b == b;
-	}
+  bool operator==(Color const& other) const
+  {
+	return other.r == r && other.g == g && other.b == b;
+  }
 
-	bool operator!=(Color const& other) const
-	{
-		return other.r != r || other.g != g || other.b != b;
-	}
+  bool operator!=(Color const& other) const
+  {
+	return other.r != r || other.g != g || other.b != b;
+  }
 
-	bool isSet() const { return 0 != r || 0 != g || 0 != b; }
+  bool isSet() const
+  {
+	return 0 != r || 0 != g || 0 != b;
+  }
 };
+
 }  // namespace ufo::map
 
 #endif  // UFO_MAP_COLOR_H
