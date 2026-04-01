@@ -1,6 +1,6 @@
 # Manipulators for Occlusion- and Collision-Aware Predictive Human Tracking
 
-We apply a Moving Horizon Planner from the literature (follow installation steps from there).
+We apply a Moving Horizon Planner from the literature (follow installation from the documentation and use the provided test data).
 
 This repository adapts and extends the existing code.
 
