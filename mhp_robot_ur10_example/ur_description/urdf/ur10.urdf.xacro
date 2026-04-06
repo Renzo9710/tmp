@@ -320,7 +320,7 @@
       <visual>
         <origin rpy="0.0 0.0 0.0" xyz="-0.23 -0.33 -0.013"/>
         <geometry>
-          <mesh filename="package://ur_description/meshes/rst_ft/rst_base.stl" scale="0.0255 0.0255 0.0253" />
+          <mesh filename="package://ur_description/meshes/base/base.stl" scale="0.0255 0.0255 0.0253" />
         </geometry>
         <material name="dark_grey">
           <color rgba="0.2 0.2 0.2 1.0"/> <!-- Dark grey color with alpha = 1.0 -->
