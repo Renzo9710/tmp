@@ -19,8 +19,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
-*  Authors: Maximilian Krämer
-*  Maintainer(s)/Modifier(s): Heiko Renz
+ *  Authors: Maximilian Krämer
+ *  Maintainer(s)/Modifier(s): Heiko Renz
  *********************************************************************/
 
 #include <mhp_robot/robot_misc/common.h>
@@ -501,7 +501,7 @@ void Human::updatePosesFromTf(tf::TransformListener& listener)
     for (auto& bdy : _body_parts)
     {
         // Wait until transfomrations are avaialable
-        std::string frame_name = "Heiko_upper_" + bdy.second.name + "_" + std::to_string(_id);
+        std::string frame_name = "human_frame_name" + bdy.second.name + "_" + std::to_string(_id);
         listener.waitForTransform("world", frame_name, ros::Time(0), ros::Duration(10.0));
 
         if (listener.frameExists(frame_name))

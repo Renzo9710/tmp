@@ -25,7 +25,7 @@
 
 humans:
   - id: 0
-    name: Heiko_upper_ # Name of the human frames inside the rosbag for the usage with the docker container 
+    name: human_frame_name # Name of the human frames inside the rosbag for the usage with the docker container 
     length: [0.968, 0.507, 0.0, 0.269, 0.242, 0.0, 0.269, 0.237, 0.0, 0.968] # Length of the human body parts
     radius: [0.2, 0.2, 0.139, 0.06, 0.06, 0.0, 0.06, 0.06, 0.0, 0.2] # Radius of the human body parts
     joint_angles: [-0.097, 0.363, 1.021, 1.22, -0.325, 0.11, 0.757, 1.31, -1.074, 0.093, 0.0] # Joint angles of the human skeleton (default values)
